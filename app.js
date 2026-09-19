@@ -1,74 +1,22 @@
 (function () {
   'use strict';
 
-  var PRELOAD_MIN_MS = 1100;
-  var PRELOAD_CEILING_MS = 4500;
-  var FADE_MS = 550;
-  var STORAGE_KEY = 'cs:preloaded';
-
-  var startTime = (window.performance && performance.now) ? performance.now() : Date.now();
   var reduceMotionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
   var prefersReducedMotion = !!(reduceMotionQuery && reduceMotionQuery.matches);
 
-  /* ---------- Preloader ---------- */
-
-  function initPreloader() {
-    var preloader = document.getElementById('preloader');
-    if (!preloader) return;
-
-    var alreadySeen = false;
-    try {
-      alreadySeen = sessionStorage.getItem(STORAGE_KEY) === '1';
-    } catch (e) {
-      alreadySeen = false;
-    }
-
-    if (alreadySeen) {
-      preloader.hidden = true;
-      return;
-    }
-
-    var done = false;
-
-    function finish() {
-      if (done) return;
-      done = true;
-      preloader.classList.add('is-done');
-      try {
-        sessionStorage.setItem(STORAGE_KEY, '1');
-      } catch (e) {}
-      window.setTimeout(function () {
-        preloader.hidden = true;
-      }, FADE_MS);
-    }
-
-    if (prefersReducedMotion) {
-      window.setTimeout(finish, 300);
-      return;
-    }
-
-    window.addEventListener('load', function () {
-      var elapsed = (window.performance && performance.now) ? performance.now() - startTime : PRELOAD_MIN_MS;
-      var remaining = Math.max(0, PRELOAD_MIN_MS - elapsed);
-      window.setTimeout(finish, remaining);
-    });
-
-    window.setTimeout(finish, PRELOAD_CEILING_MS);
-  }
-
-  /* ---------- Chat demo ---------- */
+  /* ---------- Démo de conversation ---------- */
 
   var SCRIPT = [
-    { who: 'client', text: 'Bonjour, vous avez encore le pagne wax indigo ?' },
-    { who: 'agent', typingMs: 1100, text: 'Bonjour ! Oui, le pagne wax indigo (6 yards) est disponible à 15 000 FCFA la pièce, 13 500 FCFA/pièce à partir de 2 pièces.' },
-    { who: 'client', text: 'Je peux en avoir 2 alors ?' },
-    { who: 'agent', typingMs: 900, text: 'Parfait : 2 pagnes wax indigo à 13 500 FCFA/pièce, soit 27 000 FCFA au total.' },
-    { who: 'client', text: 'Vous avez aussi des chaussures assorties ?' },
-    { who: 'agent', typingMs: 1300, text: "Nous n'avons pas de chaussures au catalogue pour le moment. En revanche, le foulard wax assorti à 3 000 FCFA irait très bien avec votre pagne." },
-    { who: 'client', text: "D'accord, ajoutez un foulard aussi." },
-    { who: 'agent', typingMs: 1000, text: 'Ajouté : 1 foulard wax assorti. Total de la commande : 30 000 FCFA. Retrait en boutique ou livraison ?' },
-    { who: 'client', text: 'Livraison à Calavi, s\'il vous plaît.' },
-    { who: 'agent', typingMs: 1200, text: 'Commande confirmée : 2 pagnes wax indigo + 1 foulard assorti, livraison à Calavi. Merci pour votre confiance !' }
+    { who: 'client', time: '09:14', text: 'Bonjour, vous avez encore le pagne wax indigo ?' },
+    { who: 'agent', time: '09:14', typingMs: 1100, text: 'Bonjour ! Oui, le pagne wax indigo (6 yards) est disponible à 15 000 FCFA la pièce, 13 500 FCFA/pièce à partir de 2 pièces.' },
+    { who: 'client', time: '09:16', text: 'Je peux en avoir 2 alors ?' },
+    { who: 'agent', time: '09:16', typingMs: 900, text: 'Parfait : 2 pagnes wax indigo à 13 500 FCFA/pièce, soit 27 000 FCFA au total.' },
+    { who: 'client', time: '09:18', text: 'Vous avez aussi des chaussures assorties ?' },
+    { who: 'agent', time: '09:19', typingMs: 1300, text: "Nous n'avons pas de chaussures au catalogue pour le moment. En revanche, le foulard wax assorti à 3 000 FCFA irait très bien avec votre pagne." },
+    { who: 'client', time: '09:20', text: "D'accord, ajoutez un foulard aussi." },
+    { who: 'agent', time: '09:20', typingMs: 1000, text: 'Ajouté : 1 foulard wax assorti. Total de la commande : 30 000 FCFA. Retrait en boutique ou livraison ?' },
+    { who: 'client', time: '09:22', text: 'Livraison à Calavi, s\'il vous plaît.' },
+    { who: 'agent', time: '09:23', typingMs: 1200, text: 'Commande confirmée : 2 pagnes wax indigo + 1 foulard assorti, livraison à Calavi. Merci pour votre confiance !' }
   ];
 
   var LOOP_PAUSE_MS = 4500;
@@ -83,8 +31,7 @@
       return;
     }
 
-    var generation = 0;
-    playSequence(chat, generation);
+    playSequence(chat, currentGeneration);
   }
 
   function renderStatic(chat) {
@@ -94,10 +41,31 @@
     }
   }
 
+  function makeTicks() {
+    var span = document.createElement('span');
+    span.className = 'bubble__ticks';
+    span.innerHTML = '<svg viewBox="0 0 16 11" width="14" height="10" fill="none"><path d="M1 5.5L4.5 9L10.5 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 5.5L9 9L15 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    return span;
+  }
+
   function makeBubble(entry) {
     var bubble = document.createElement('div');
     bubble.className = 'bubble ' + (entry.who === 'agent' ? 'bubble--agent' : 'bubble--client');
-    bubble.textContent = entry.text;
+
+    var text = document.createElement('p');
+    text.className = 'bubble__text';
+    text.textContent = entry.text;
+    bubble.appendChild(text);
+
+    var meta = document.createElement('span');
+    meta.className = 'bubble__meta';
+    meta.setAttribute('aria-hidden', 'true');
+    meta.appendChild(document.createTextNode(entry.time));
+    if (entry.who === 'agent') {
+      meta.appendChild(makeTicks());
+    }
+    bubble.appendChild(meta);
+
     return bubble;
   }
 
@@ -159,8 +127,7 @@
 
   var currentGeneration = 0;
 
-  /* ---------- Boot ---------- */
+  /* ---------- Démarrage ---------- */
 
-  initPreloader();
   initChatDemo();
 })();
