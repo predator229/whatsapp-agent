@@ -16,6 +16,7 @@ export default defineConfig(() => ({
     coverage: {
       reportsDirectory: '../../coverage/libs/domain',
       provider: 'v8' as const,
+      thresholds: { lines: 90, functions: 90, branches: 85 },
     },
   },
 }))

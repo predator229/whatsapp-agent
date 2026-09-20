@@ -18,4 +18,7 @@ describe('MerchantProfile', () => {
   it('parseMerchantProfile reports Zod errors with a path', () => {
     expect(() => parseMerchantProfile({ ...pilotProfile, currency: 'EUR' })).toThrow(/currency/)
   })
+  it('parseMerchantProfile returns the profile unchanged when it is valid', () => {
+    expect(parseMerchantProfile(pilotProfile)).toEqual(pilotProfile)
+  })
 })
