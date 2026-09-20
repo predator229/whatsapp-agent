@@ -14,6 +14,10 @@ export default defineConfig(() => ({
     include: ['{src,tests}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     reporters: ['default'],
     coverage: {
+      // Atomized `test-ci--*` targets each run a single spec file, so per-file coverage
+      // never reaches the whole-lib thresholds below. Enforce coverage for the aggregate
+      // `test` target (and bare `vitest`), but not for the atomized `test-ci` children.
+      enabled: !(process.env['NX_TASK_TARGET_TARGET'] ?? '').startsWith('test-ci'),
       reportsDirectory: '../../coverage/libs/domain',
       provider: 'v8' as const,
       thresholds: { lines: 90, functions: 90, branches: 85 },

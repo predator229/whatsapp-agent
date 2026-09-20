@@ -17,15 +17,30 @@ export const NegotiationPolicySchema = z.object({
 
 export type NegotiationPolicy = z.infer<typeof NegotiationPolicySchema>
 
-/** Vérifie la cohérence avec le catalogue. Retourne les erreurs, vide si OK. */
-export function validateNegotiationAgainstCatalogue(policy: NegotiationPolicy, catalogue: Product[]): string[] {
+/** Un défaut de cohérence négociation/catalogue, relatif à `NegotiationPolicy` (sans le préfixe `negotiation`). */
+export interface NegotiationIssue {
+  path: (string | number)[]
+  message: string
+}
+
+/** Vérifie la cohérence avec le catalogue. Retourne les défauts, vide si OK. */
+export function validateNegotiationAgainstCatalogue(policy: NegotiationPolicy, catalogue: Product[]): NegotiationIssue[] {
   const byId = new Map(catalogue.map((p) => [p.productId, p]))
-  return Object.entries(policy.perProduct).flatMap(([productId, rule]) => {
+
+  const perProductIssues = Object.entries(policy.perProduct).flatMap(([productId, rule]): NegotiationIssue[] => {
     const product = byId.get(productId)
-    if (!product) return [`negotiation.perProduct.${productId}: unknown product`]
+    if (!product) return [{ path: ['perProduct', productId], message: `unknown product ${productId}` }]
     const minListed = Math.min(...listedPrices(product))
     return rule.floorPrice > minListed
-      ? [`negotiation.perProduct.${productId}: floorPrice ${rule.floorPrice} > listed price ${minListed}`]
+      ? [{ path: ['perProduct', productId, 'floorPrice'], message: `floorPrice ${rule.floorPrice} > listed price ${minListed}` }]
       : []
   })
+
+  const quantityDiscountIssues = policy.quantityDiscounts.flatMap((discount, index): NegotiationIssue[] =>
+    byId.has(discount.productId)
+      ? []
+      : [{ path: ['quantityDiscounts', index, 'productId'], message: `unknown product ${discount.productId}` }],
+  )
+
+  return [...perProductIssues, ...quantityDiscountIssues]
 }

@@ -37,9 +37,17 @@ describe('validateNegotiationAgainstCatalogue', () => {
       robe: { floorPrice: 13000, steps: [] }, ghost: { floorPrice: 1, steps: [] } }, quantityDiscounts: [] })
     const errors = validateNegotiationAgainstCatalogue(policy, [robe])
     expect(errors).toHaveLength(2)
+    expect(errors).toContainEqual(expect.objectContaining({ path: ['perProduct', 'robe', 'floorPrice'] }))
+    expect(errors).toContainEqual(expect.objectContaining({ path: ['perProduct', 'ghost'] }))
   })
   it('returns no errors for a consistent policy', () => {
     const policy = NegotiationPolicySchema.parse({ enabled: true, perProduct: { robe: { floorPrice: 9000, steps: [10000] } }, quantityDiscounts: [] })
     expect(validateNegotiationAgainstCatalogue(policy, [robe])).toEqual([])
+  })
+  it('flags an unknown productId in quantityDiscounts', () => {
+    const policy = NegotiationPolicySchema.parse({ enabled: true, perProduct: {},
+      quantityDiscounts: [{ productId: 'ghost', minQuantity: 2, percentOff: 10 }] })
+    const errors = validateNegotiationAgainstCatalogue(policy, [robe])
+    expect(errors).toEqual([{ path: ['quantityDiscounts', 0, 'productId'], message: 'unknown product ghost' }])
   })
 })

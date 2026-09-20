@@ -39,7 +39,7 @@ Champs communs : `productId`, `name`, `aliases[]` (noms parlés, ex. « pagne »
 | `bulk` | `unitOfMeasure` (`kg`, `m`, `L`, `piece`), `pricePerUnit`, `minQuantity`, `stepQuantity`, `stockQuantity` | Riz 800 XOF/kg, min 1 kg, pas 0,5 kg |
 | `madeToOrder` | `basePrice`, `leadTimeDays`, `depositPercent` (0–100), `options[]` : `{ label, extraPrice }` | Tenue sur mesure, 25 000 XOF, 7 jours, 50 % d'acompte |
 
-Prix : entiers en unité de devise (pas de centimes en XOF). Stock : entier ou `null` = illimité / non suivi.
+Prix : entiers en unité de devise (pas de centimes en XOF). Stock : entier ou `null` (illimité / non suivi) pour les variantes ; pour le vrac, `stockQuantity` est un réel ≥ 0 ou `null` (kg, m, L sont continus).
 
 ### NegotiationPolicy
 
@@ -56,6 +56,7 @@ Invariants (validés par Zod `.refine`) :
 - `floorPrice` ≤ prix affiché de chaque variante du produit.
 - `steps` strictement décroissants, tous ≥ `floorPrice`. Vide = pas de remise sur ce produit.
 - `percentOff` ∈ ]0, 50].
+- Ces invariants, le rejet des `productId` dupliqués et la cohérence des `quantityDiscounts` sont portés par `MerchantProfileSchema` lui-même (`superRefine`) ; `parseMerchantProfile` ne fait qu'ajouter des messages lisibles.
 
 ### StyleProfile
 

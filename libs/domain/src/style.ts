@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const StyleProfileSchema = z.object({
   tone: z.enum(['chaleureux', 'direct', 'formel']),
   greeting: z.string().min(1),
-  signoff: z.string(),
+  signoff: z.string().min(1),
   languageMix: z.object({
     primary: z.literal('fr'),
     secondary: z.enum(['fon', 'yoruba', 'en']).optional(),

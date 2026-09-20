@@ -15,6 +15,10 @@ describe('exportProfile', () => {
     const profile = { ...pilotProfile, catalogue: [{ ...pilotProfile.catalogue[0], name: 'Robe "wax", rouge' }] }
     expect(exportProfile(profile).catalogueCsv).toContain('"Robe ""wax"", rouge"')
   })
+  it('escapes a carriage return in a field', () => {
+    const profile = { ...pilotProfile, catalogue: [{ ...pilotProfile.catalogue[0], name: 'Robe\rrouge' }] }
+    expect(exportProfile(profile).catalogueCsv).toContain('"Robe\rrouge"')
+  })
   it('profileJson round-trips', () => {
     expect(JSON.parse(out.profileJson)).toEqual(pilotProfile)
   })

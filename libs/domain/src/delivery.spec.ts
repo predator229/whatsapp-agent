@@ -12,4 +12,10 @@ describe('DeliveryPolicySchema', () => {
   it('rejects unknown payment method', () => {
     expect(() => DeliveryPolicySchema.parse({ zones: [], paymentMethods: ['bitcoin'] })).toThrow()
   })
+  it('rejects a non-integer zone fee', () => {
+    expect(() => DeliveryPolicySchema.parse({ zones: [{ name: 'Cotonou', fee: 10.5, delayHours: 24 }], paymentMethods: ['cash_on_delivery'] })).toThrow()
+  })
+  it('rejects a non-positive delayHours', () => {
+    expect(() => DeliveryPolicySchema.parse({ zones: [{ name: 'Cotonou', fee: 1000, delayHours: 0 }], paymentMethods: ['cash_on_delivery'] })).toThrow()
+  })
 })

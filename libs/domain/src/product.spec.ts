@@ -25,4 +25,18 @@ describe('ProductSchema', () => {
   it('rejects description over 300 chars', () => {
     expect(() => ProductSchema.parse({ ...base, description: 'a'.repeat(301), pricing: { kind: 'bulk', unitOfMeasure: 'kg', pricePerUnit: 1, minQuantity: 1, stepQuantity: 1, stockQuantity: null } })).toThrow()
   })
+  it('rejects depositPercent outside 0..100', () => {
+    for (const depositPercent of [101, -1]) {
+      expect(() => ProductSchema.parse({ ...base, pricing: { kind: 'madeToOrder', basePrice: 25000, leadTimeDays: 7, depositPercent, options: [] } })).toThrow()
+    }
+  })
+  it('rejects a non-positive leadTimeDays', () => {
+    expect(() => ProductSchema.parse({ ...base, pricing: { kind: 'madeToOrder', basePrice: 25000, leadTimeDays: 0, depositPercent: 50, options: [] } })).toThrow()
+  })
+  it('rejects a non-integer variant stock', () => {
+    expect(() => ProductSchema.parse({ ...base, pricing: { kind: 'unit', variants: [{ variantId: 'v', label: 'x', attributes: {}, price: 1000, stock: 1.5 }] } })).toThrow()
+  })
+  it('rejects a photo that is not a URL', () => {
+    expect(() => ProductSchema.parse({ ...base, photos: ['not a url'], pricing: { kind: 'bulk', unitOfMeasure: 'kg', pricePerUnit: 1, minQuantity: 1, stepQuantity: 1, stockQuantity: null } })).toThrow()
+  })
 })

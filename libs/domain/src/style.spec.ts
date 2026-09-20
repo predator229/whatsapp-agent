@@ -16,4 +16,6 @@ describe('StyleProfileSchema', () => {
   })
   it('requires at least 2 fallbacks', () => { expect(() => StyleProfileSchema.parse({ ...valid, fallbacks: ['x'] })).toThrow() })
   it('rejects ratio outside 0..1', () => { expect(() => StyleProfileSchema.parse({ ...valid, languageMix: { primary: 'fr', ratio: 1.5 } })).toThrow() })
+  it('rejects emojiLevel outside 0..2', () => { expect(() => StyleProfileSchema.parse({ ...valid, emojiLevel: 3 })).toThrow() })
+  it('rejects an empty signoff', () => { expect(() => StyleProfileSchema.parse({ ...valid, signoff: '' })).toThrow() })
 })

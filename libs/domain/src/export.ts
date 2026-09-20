@@ -1,6 +1,11 @@
 import type { MerchantProfile } from './merchant-profile'
 import type { Product } from './product'
 
+/**
+ * Colonnes stables du CSV catalogue. Deux colonnes changent de sens selon `kind` :
+ * - `price` : prix de la variante (`unit`), `pricePerUnit` (`bulk`) ou `basePrice` (`madeToOrder`).
+ * - `stock` : stock de la variante (`unit`) ou `stockQuantity` (`bulk`) ; vide pour `madeToOrder`.
+ */
 export const CATALOGUE_CSV_COLUMNS = [
   'productId', 'name', 'kind', 'variantId', 'label', 'price', 'unitOfMeasure', 'stock', 'leadTimeDays', 'depositPercent', 'active',
 ] as const
@@ -10,7 +15,7 @@ type Row = Record<(typeof CATALOGUE_CSV_COLUMNS)[number], string | number | bool
 function csvCell(value: string | number | boolean | null): string {
   if (value === null) return ''
   const s = String(value)
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
 function rowsFor(p: Product): Row[] {
