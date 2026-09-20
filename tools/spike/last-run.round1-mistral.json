@@ -1,363 +1,289 @@
 {
-  "MODEL": "qwen2.5:14b-instruct-q4_K_M",
+  "MODEL": "mistral-small:24b-instruct-2501-q4_K_M",
   "ok": 50,
-  "correct": 46,
-  "dangerous": 1,
   "total": 50,
-  "avgMs": 2134,
+  "avgMs": 4901,
   "results": [
     {
       "text": "Bonsoir tantie c'est combien la robe rouge là",
-      "expected": "ask_price",
       "ok": true,
-      "ms": 16126,
+      "ms": 19160,
       "parsed": {
         "intent": "ask_price",
         "productRefs": [
           {
-            "productId": "robe-rouge"
+            "productId": "robe-rouge",
+            "quantity": 1
           }
         ]
-      },
-      "correct": true,
-      "dangerous": false
+      }
     },
     {
       "text": "Vous avez le riz en sac de 25kg ?",
-      "expected": "ask_product",
       "ok": true,
-      "ms": 1791,
+      "ms": 6119,
       "parsed": {
         "intent": "ask_product",
         "productRefs": [
           {
-            "productId": "riz-25kg"
+            "productId": "riz-25kg",
+            "quantity": 1
           }
         ]
-      },
-      "correct": true,
-      "dangerous": false
+      }
     },
     {
       "text": "12000 c'est trop, fais 9000 je prends deux",
-      "expected": "negotiate",
       "ok": true,
-      "ms": 2729,
+      "ms": 2726,
       "parsed": {
         "intent": "negotiate",
-        "productRefs": [
-          {
-            "productId": "riz-25kg",
-            "quantity": 2
-          }
-        ],
-        "counterOffer": 9000
-      },
-      "correct": true,
-      "dangerous": false
+        "productRefs": []
+      }
     },
     {
       "text": "Je veux 3 mètres de wax bleu",
-      "expected": "add_to_cart",
       "ok": true,
-      "ms": 2202,
+      "ms": 5806,
       "parsed": {
-        "intent": "add_to_cart",
+        "intent": "ask_product",
         "productRefs": [
           {
             "productId": "wax-bleu",
             "quantity": 3
           }
         ]
-      },
-      "correct": true,
-      "dangerous": false
+      }
     },
     {
       "text": "Bien arrivée ?",
-      "expected": "greet",
       "ok": true,
-      "ms": 1082,
+      "ms": 2691,
       "parsed": {
-        "intent": "greet",
+        "intent": "off_topic",
         "productRefs": []
-      },
-      "correct": true,
-      "dangerous": false
+      }
     },
     {
       "text": "Est-ce que vous livrez à Calavi",
-      "expected": "unclear",
       "ok": true,
-      "ms": 1509,
+      "ms": 2609,
       "parsed": {
-        "intent": "give_address",
-        "productRefs": [],
-        "address": "Calavi"
-      },
-      "correct": false,
-      "dangerous": true
+        "intent": "off_topic",
+        "productRefs": []
+      }
     },
     {
       "text": "Ok je prends, mon adresse c'est Fidjrossè carrefour pharmacie",
-      "expected": "give_address",
       "ok": true,
-      "ms": 2366,
+      "ms": 2932,
       "parsed": {
-        "intent": "give_address",
-        "productRefs": [],
-        "address": "Fidjrossè carrefour pharmacie"
-      },
-      "correct": true,
-      "dangerous": false
+        "intent": "off_topic",
+        "productRefs": []
+      }
     },
     {
       "text": "Laisse tomber je vais voir ailleurs",
-      "expected": "cancel",
       "ok": true,
-      "ms": 981,
+      "ms": 3472,
       "parsed": {
-        "intent": "cancel",
+        "intent": "off_topic",
         "productRefs": []
-      },
-      "correct": true,
-      "dangerous": false
+      }
     },
     {
       "text": "Tu peux coudre une tenue pour un mariage samedi prochain ?",
-      "expected": "ask_product",
       "ok": true,
-      "ms": 1754,
+      "ms": 6139,
       "parsed": {
-        "intent": "ask_product",
+        "intent": "cancel",
         "productRefs": [
           {
-            "productId": "tenue-mesure"
+            "productId": "tenue-mesure",
+            "quantity": 1
           }
         ]
-      },
-      "correct": true,
-      "dangerous": false
+      }
     },
     {
       "text": "C'est quoi le prix du kg de gari",
-      "expected": "ask_price",
       "ok": true,
-      "ms": 1883,
+      "ms": 5935,
       "parsed": {
         "intent": "ask_price",
-        "productRefs": [
-          {
-            "productId": "gari"
-          }
-        ]
-      },
-      "correct": true,
-      "dangerous": false
-    },
-    {
-      "text": "Je confirme la commande",
-      "expected": "confirm_order",
-      "ok": true,
-      "ms": 1223,
-      "parsed": {
-        "intent": "confirm_order",
-        "productRefs": []
-      },
-      "correct": true,
-      "dangerous": false
-    },
-    {
-      "text": "Envoie moi la photo de la chaussure noire",
-      "expected": "browse",
-      "ok": true,
-      "ms": 2121,
-      "parsed": {
-        "intent": "browse",
-        "productRefs": [
-          {
-            "productId": "chaussure-noire"
-          }
-        ]
-      },
-      "correct": true,
-      "dangerous": false
-    },
-    {
-      "text": "Vous êtes ouverts dimanche ?",
-      "expected": "off_topic",
-      "ok": true,
-      "ms": 1423,
-      "parsed": {
-        "intent": "off_topic",
-        "productRefs": []
-      },
-      "correct": true,
-      "dangerous": false
-    },
-    {
-      "text": "Mon frère a dit que tu fais des réductions",
-      "expected": "unclear",
-      "ok": true,
-      "ms": 1282,
-      "parsed": {
-        "intent": "negotiate",
-        "productRefs": []
-      },
-      "correct": false,
-      "dangerous": false
-    },
-    {
-      "text": "Je veux annuler ce que j'ai pris",
-      "expected": "cancel",
-      "ok": true,
-      "ms": 1074,
-      "parsed": {
-        "intent": "cancel",
-        "productRefs": []
-      },
-      "correct": true,
-      "dangerous": false
-    },
-    {
-      "text": "Bonjour ma sœur, j'espère que tu vas bien",
-      "expected": "greet",
-      "ok": true,
-      "ms": 1173,
-      "parsed": {
-        "intent": "greet",
-        "productRefs": []
-      },
-      "correct": true,
-      "dangerous": false
-    },
-    {
-      "text": "Alo tantie, bonne arrivée hier soir ?",
-      "expected": "greet",
-      "ok": true,
-      "ms": 1107,
-      "parsed": {
-        "intent": "greet",
-        "productRefs": []
-      },
-      "correct": true,
-      "dangerous": false
-    },
-    {
-      "text": "Vous avez encore la chaussure noire en taille 40 ?",
-      "expected": "ask_product",
-      "ok": true,
-      "ms": 1725,
-      "parsed": {
-        "intent": "ask_product",
-        "productRefs": [
-          {
-            "productId": "chaussure-noire"
-          }
-        ]
-      },
-      "correct": true,
-      "dangerous": false
-    },
-    {
-      "text": "Le pagne wax que tu as posté hier, il reste encore ?",
-      "expected": "browse",
-      "ok": true,
-      "ms": 1742,
-      "parsed": {
-        "intent": "ask_product",
-        "productRefs": [
-          {
-            "productId": "wax-bleu"
-          }
-        ]
-      },
-      "correct": false,
-      "dangerous": false
-    },
-    {
-      "text": "Montre-moi ce que tu as comme robe pour ce weekend",
-      "expected": "browse",
-      "ok": true,
-      "ms": 1623,
-      "parsed": {
-        "intent": "browse",
-        "productRefs": [
-          {
-            "productId": "robe-rouge"
-          }
-        ]
-      },
-      "correct": true,
-      "dangerous": false
-    },
-    {
-      "text": "Est-ce que vous faites aussi des réparations de téléphone ?",
-      "expected": "off_topic",
-      "ok": true,
-      "ms": 1138,
-      "parsed": {
-        "intent": "off_topic",
-        "productRefs": []
-      },
-      "correct": true,
-      "dangerous": false
-    },
-    {
-      "text": "C'est combien le mètre de wax bleu ?",
-      "expected": "ask_price",
-      "ok": true,
-      "ms": 1747,
-      "parsed": {
-        "intent": "ask_price",
-        "productRefs": [
-          {
-            "productId": "wax-bleu"
-          }
-        ]
-      },
-      "correct": true,
-      "dangerous": false
-    },
-    {
-      "text": "Fais-moi un prix pour la tenue sur mesure stp",
-      "expected": "ask_price",
-      "ok": true,
-      "ms": 1858,
-      "parsed": {
-        "intent": "negotiate",
-        "productRefs": [
-          {
-            "productId": "tenue-mesure"
-          }
-        ]
-      },
-      "correct": false,
-      "dangerous": false
-    },
-    {
-      "text": "8000 francs pour le gari, ça va ou pas ?",
-      "expected": "negotiate",
-      "ok": true,
-      "ms": 2578,
-      "parsed": {
-        "intent": "negotiate",
         "productRefs": [
           {
             "productId": "gari",
             "quantity": 1
           }
-        ],
-        "counterOffer": 8000
-      },
-      "correct": true,
-      "dangerous": false
+        ]
+      }
+    },
+    {
+      "text": "Je confirme la commande",
+      "ok": true,
+      "ms": 2739,
+      "parsed": {
+        "intent": "confirm_order",
+        "productRefs": []
+      }
+    },
+    {
+      "text": "Envoie moi la photo de la chaussure noire",
+      "ok": true,
+      "ms": 5772,
+      "parsed": {
+        "intent": "ask_product",
+        "productRefs": [
+          {
+            "productId": "chaussure-noire",
+            "quantity": 1
+          }
+        ]
+      }
+    },
+    {
+      "text": "Vous êtes ouverts dimanche ?",
+      "ok": true,
+      "ms": 2685,
+      "parsed": {
+        "intent": "off_topic",
+        "productRefs": []
+      }
+    },
+    {
+      "text": "Mon frère a dit que tu fais des réductions",
+      "ok": true,
+      "ms": 2866,
+      "parsed": {
+        "intent": "off_topic",
+        "productRefs": []
+      }
+    },
+    {
+      "text": "Je veux annuler ce que j'ai pris",
+      "ok": true,
+      "ms": 2833,
+      "parsed": {
+        "intent": "cancel",
+        "productRefs": []
+      }
+    },
+    {
+      "text": "Bonjour ma sœur, j'espère que tu vas bien",
+      "ok": true,
+      "ms": 2705,
+      "parsed": {
+        "intent": "greet",
+        "productRefs": []
+      }
+    },
+    {
+      "text": "Alo tantie, bonne arrivée hier soir ?",
+      "ok": true,
+      "ms": 2641,
+      "parsed": {
+        "intent": "greet",
+        "productRefs": []
+      }
+    },
+    {
+      "text": "Vous avez encore la chaussure noire en taille 40 ?",
+      "ok": true,
+      "ms": 6084,
+      "parsed": {
+        "intent": "ask_product",
+        "productRefs": [
+          {
+            "productId": "chaussure-noire",
+            "quantity": 1
+          }
+        ]
+      }
+    },
+    {
+      "text": "Le pagne wax que tu as posté hier, il reste encore ?",
+      "ok": true,
+      "ms": 7532,
+      "parsed": {
+        "intent": "ask_product",
+        "productRefs": [
+          {
+            "productId": "wax-bleu",
+            "quantity": 1
+          }
+        ]
+      }
+    },
+    {
+      "text": "Montre-moi ce que tu as comme robe pour ce weekend",
+      "ok": true,
+      "ms": 6425,
+      "parsed": {
+        "intent": "remove_from_cart",
+        "productRefs": [
+          {
+            "productId": "robe-rouge",
+            "quantity": 1
+          }
+        ]
+      }
+    },
+    {
+      "text": "Est-ce que vous faites aussi des réparations de téléphone ?",
+      "ok": true,
+      "ms": 3059,
+      "parsed": {
+        "intent": "off_topic",
+        "productRefs": []
+      }
+    },
+    {
+      "text": "C'est combien le mètre de wax bleu ?",
+      "ok": true,
+      "ms": 5928,
+      "parsed": {
+        "intent": "ask_price",
+        "productRefs": [
+          {
+            "productId": "wax-bleu",
+            "quantity": 1
+          }
+        ]
+      }
+    },
+    {
+      "text": "Fais-moi un prix pour la tenue sur mesure stp",
+      "ok": true,
+      "ms": 5926,
+      "parsed": {
+        "intent": "ask_price",
+        "productRefs": [
+          {
+            "productId": "tenue-mesure",
+            "quantity": 1
+          }
+        ]
+      }
+    },
+    {
+      "text": "8000 francs pour le gari, ça va ou pas ?",
+      "ok": true,
+      "ms": 5526,
+      "parsed": {
+        "intent": "ask_price",
+        "productRefs": [
+          {
+            "productId": "gari",
+            "quantity": 1
+          }
+        ]
+      }
     },
     {
       "text": "Je peux payer 15000 pour la robe, pas plus",
-      "expected": "negotiate",
       "ok": true,
-      "ms": 2793,
+      "ms": 7746,
       "parsed": {
         "intent": "negotiate",
         "productRefs": [
@@ -367,51 +293,41 @@
           }
         ],
         "counterOffer": 15000
-      },
-      "correct": true,
-      "dangerous": false
+      }
     },
     {
       "text": "Baisse un peu, mets à 5000 le kg de gari",
-      "expected": "negotiate",
       "ok": true,
-      "ms": 2559,
+      "ms": 7400,
       "parsed": {
-        "intent": "negotiate",
+        "intent": "browse",
         "productRefs": [
           {
             "productId": "gari",
             "quantity": 1
           }
         ],
-        "counterOffer": 5000
-      },
-      "correct": true,
-      "dangerous": false
+        "address": "5000"
+      }
     },
     {
       "text": "Fais 20000 pour la tenue et je prends direct",
-      "expected": "negotiate",
       "ok": true,
-      "ms": 3037,
+      "ms": 6849,
       "parsed": {
-        "intent": "negotiate",
+        "intent": "add_to_cart",
         "productRefs": [
           {
             "productId": "tenue-mesure",
-            "quantity": 1
+            "quantity": 20000
           }
-        ],
-        "counterOffer": 20000
-      },
-      "correct": true,
-      "dangerous": false
+        ]
+      }
     },
     {
       "text": "10000 c'est mon dernier prix pour les chaussures",
-      "expected": "negotiate",
       "ok": true,
-      "ms": 2871,
+      "ms": 8039,
       "parsed": {
         "intent": "negotiate",
         "productRefs": [
@@ -421,15 +337,12 @@
           }
         ],
         "counterOffer": 10000
-      },
-      "correct": true,
-      "dangerous": false
+      }
     },
     {
       "text": "Tu ne peux pas descendre à 7000 pour le sac de riz ?",
-      "expected": "negotiate",
       "ok": true,
-      "ms": 3150,
+      "ms": 5891,
       "parsed": {
         "intent": "negotiate",
         "productRefs": [
@@ -437,34 +350,22 @@
             "productId": "riz-25kg",
             "quantity": 1
           }
-        ],
-        "counterOffer": 7000
-      },
-      "correct": true,
-      "dangerous": false
+        ]
+      }
     },
     {
       "text": "3000 le mètre c'est cher, fais 2000",
-      "expected": "negotiate",
       "ok": true,
-      "ms": 2664,
+      "ms": 2648,
       "parsed": {
-        "intent": "negotiate",
-        "productRefs": [
-          {
-            "productId": "wax-bleu"
-          }
-        ],
-        "counterOffer": 2000
-      },
-      "correct": true,
-      "dangerous": false
+        "intent": "off_topic",
+        "productRefs": []
+      }
     },
     {
       "text": "Je prends la robe rouge, ajoute-la à ma commande",
-      "expected": "add_to_cart",
       "ok": true,
-      "ms": 2087,
+      "ms": 6284,
       "parsed": {
         "intent": "add_to_cart",
         "productRefs": [
@@ -473,15 +374,12 @@
             "quantity": 1
           }
         ]
-      },
-      "correct": true,
-      "dangerous": false
+      }
     },
     {
       "text": "Mets-moi 2 sacs de riz de 25kg",
-      "expected": "add_to_cart",
       "ok": true,
-      "ms": 2167,
+      "ms": 6184,
       "parsed": {
         "intent": "add_to_cart",
         "productRefs": [
@@ -490,15 +388,12 @@
             "quantity": 2
           }
         ]
-      },
-      "correct": true,
-      "dangerous": false
+      }
     },
     {
       "text": "Ajoute une paire de chaussures noires pointure 39",
-      "expected": "add_to_cart",
       "ok": true,
-      "ms": 2251,
+      "ms": 6016,
       "parsed": {
         "intent": "add_to_cart",
         "productRefs": [
@@ -507,15 +402,12 @@
             "quantity": 1
           }
         ]
-      },
-      "correct": true,
-      "dangerous": false
+      }
     },
     {
       "text": "Je prends 5 mètres de wax bleu et le gari aussi",
-      "expected": "add_to_cart",
       "ok": true,
-      "ms": 2918,
+      "ms": 8421,
       "parsed": {
         "intent": "add_to_cart",
         "productRefs": [
@@ -528,47 +420,40 @@
             "quantity": 1
           }
         ]
-      },
-      "correct": true,
-      "dangerous": false
+      }
     },
     {
       "text": "Finalement enlève le riz de ma commande",
-      "expected": "remove_from_cart",
       "ok": true,
-      "ms": 1830,
+      "ms": 5962,
       "parsed": {
         "intent": "remove_from_cart",
         "productRefs": [
           {
-            "productId": "riz-25kg"
+            "productId": "riz-25kg",
+            "quantity": 1
           }
         ]
-      },
-      "correct": true,
-      "dangerous": false
+      }
     },
     {
       "text": "Retire la tenue sur mesure, je ne veux plus",
-      "expected": "remove_from_cart",
       "ok": true,
-      "ms": 1838,
+      "ms": 6419,
       "parsed": {
         "intent": "remove_from_cart",
         "productRefs": [
           {
-            "productId": "tenue-mesure"
+            "productId": "tenue-mesure",
+            "quantity": 1
           }
         ]
-      },
-      "correct": true,
-      "dangerous": false
+      }
     },
     {
       "text": "Enlève une des chaussures, je ne prends qu'une paire",
-      "expected": "remove_from_cart",
       "ok": true,
-      "ms": 2174,
+      "ms": 6918,
       "parsed": {
         "intent": "remove_from_cart",
         "productRefs": [
@@ -577,170 +462,124 @@
             "quantity": 1
           }
         ]
-      },
-      "correct": true,
-      "dangerous": false
+      }
     },
     {
       "text": "Mon adresse c'est Akpakpa non loin du carrefour",
-      "expected": "give_address",
       "ok": true,
-      "ms": 2152,
+      "ms": 3439,
       "parsed": {
-        "intent": "give_address",
-        "productRefs": [],
-        "address": "Akpakpa non loin du carrefour"
-      },
-      "correct": true,
-      "dangerous": false
+        "intent": "off_topic",
+        "productRefs": []
+      }
     },
     {
       "text": "Livre-moi à Godomey, quartier Zoca",
-      "expected": "give_address",
       "ok": true,
-      "ms": 2005,
+      "ms": 2831,
       "parsed": {
-        "intent": "give_address",
-        "productRefs": [],
-        "address": "Godomey, quartier Zoca"
-      },
-      "correct": true,
-      "dangerous": false
+        "intent": "off_topic",
+        "productRefs": []
+      }
     },
     {
       "text": "Je suis à Cadjèhoun, derrière la station",
-      "expected": "give_address",
       "ok": true,
-      "ms": 2309,
+      "ms": 2799,
       "parsed": {
-        "intent": "give_address",
-        "productRefs": [],
-        "address": "Cadjèhoun, derrière la station"
-      },
-      "correct": true,
-      "dangerous": false
+        "intent": "off_topic",
+        "productRefs": []
+      }
     },
     {
       "text": "Ma position c'est Calavi Godomey Bidossessi",
-      "expected": "give_address",
       "ok": true,
-      "ms": 2227,
+      "ms": 3169,
       "parsed": {
-        "intent": "give_address",
-        "productRefs": [],
-        "address": "Calavi Godomey Bidossessi"
-      },
-      "correct": true,
-      "dangerous": false
+        "intent": "off_topic",
+        "productRefs": []
+      }
     },
     {
       "text": "Tu peux envoyer à Akpakpa carrefour Toyota ?",
-      "expected": "give_address",
       "ok": true,
-      "ms": 2409,
+      "ms": 2918,
       "parsed": {
-        "intent": "give_address",
-        "productRefs": [],
-        "address": "Akpakpa carrefour Toyota"
-      },
-      "correct": true,
-      "dangerous": false
+        "intent": "off_topic",
+        "productRefs": []
+      }
     },
     {
       "text": "Vous vendez aussi des cartes de recharge ?",
-      "expected": "off_topic",
       "ok": true,
-      "ms": 1215,
+      "ms": 3028,
       "parsed": {
         "intent": "off_topic",
         "productRefs": []
-      },
-      "correct": true,
-      "dangerous": false
+      }
     },
     {
       "text": "C'est bon je confirme, envoie la commande",
-      "expected": "confirm_order",
       "ok": true,
-      "ms": 1226,
+      "ms": 2855,
       "parsed": {
         "intent": "confirm_order",
         "productRefs": []
-      },
-      "correct": true,
-      "dangerous": false
+      }
     },
     {
       "text": "D'accord je valide tout, faites livrer",
-      "expected": "confirm_order",
       "ok": true,
-      "ms": 1111,
+      "ms": 3482,
       "parsed": {
-        "intent": "confirm_order",
+        "intent": "off_topic",
         "productRefs": []
-      },
-      "correct": true,
-      "dangerous": false
+      }
     },
     {
       "text": "Oui c'est ça, je confirme mon achat",
-      "expected": "confirm_order",
       "ok": true,
-      "ms": 1115,
+      "ms": 2913,
       "parsed": {
         "intent": "confirm_order",
         "productRefs": []
-      },
-      "correct": true,
-      "dangerous": false
+      }
     },
     {
       "text": "Finalement j'annule, je n'ai plus besoin",
-      "expected": "cancel",
       "ok": true,
-      "ms": 1017,
+      "ms": 3089,
       "parsed": {
         "intent": "cancel",
         "productRefs": []
-      },
-      "correct": true,
-      "dangerous": false
+      }
     },
     {
       "text": "Bon on verra",
-      "expected": "unclear",
       "ok": true,
-      "ms": 1114,
+      "ms": 3043,
       "parsed": {
-        "intent": "unclear",
+        "intent": "off_topic",
         "productRefs": []
-      },
-      "correct": true,
-      "dangerous": false
+      }
     },
     {
       "text": "Est-ce que vous vendez des téléphones portables ?",
-      "expected": "off_topic",
       "ok": true,
-      "ms": 1110,
+      "ms": 3185,
       "parsed": {
         "intent": "off_topic",
         "productRefs": []
-      },
-      "correct": true,
-      "dangerous": false
+      }
     },
     {
       "text": "Vous avez des pièces de voiture ?",
-      "expected": "off_topic",
       "ok": true,
-      "ms": 1135,
+      "ms": 3205,
       "parsed": {
         "intent": "off_topic",
         "productRefs": []
-      },
-      "correct": true,
-      "dangerous": false
+      }
     }
   ]
 }
