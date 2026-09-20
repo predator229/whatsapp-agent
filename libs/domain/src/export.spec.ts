@@ -12,11 +12,17 @@ describe('exportProfile', () => {
     expect(rows).toHaveLength(6) // robe m, robe l, chaussure 40, gari, tenue, ancien-sac
   })
   it('escapes commas and quotes in fields', () => {
-    const profile = { ...pilotProfile, catalogue: [{ ...pilotProfile.catalogue[0], name: 'Robe "wax", rouge' }] }
+    const profile = {
+      ...pilotProfile,
+      catalogue: [{ ...pilotProfile.catalogue[0], name: 'Robe "wax", rouge' }],
+    }
     expect(exportProfile(profile).catalogueCsv).toContain('"Robe ""wax"", rouge"')
   })
   it('escapes a carriage return in a field', () => {
-    const profile = { ...pilotProfile, catalogue: [{ ...pilotProfile.catalogue[0], name: 'Robe\rrouge' }] }
+    const profile = {
+      ...pilotProfile,
+      catalogue: [{ ...pilotProfile.catalogue[0], name: 'Robe\rrouge' }],
+    }
     expect(exportProfile(profile).catalogueCsv).toContain('"Robe\rrouge"')
   })
   it('profileJson round-trips', () => {

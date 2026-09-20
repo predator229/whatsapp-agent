@@ -11,7 +11,10 @@ export const StyleProfileSchema = z.object({
   }),
   emojiLevel: z.union([z.literal(0), z.literal(1), z.literal(2)]),
   addressForm: z.enum(['tu', 'vous']),
-  examples: z.array(z.object({ customer: z.string().min(1), merchant: z.string().min(1) })).min(3).max(10),
+  examples: z
+    .array(z.object({ customer: z.string().min(1), merchant: z.string().min(1) }))
+    .min(3)
+    .max(10),
   fallbacks: z.array(z.string().min(1)).min(2),
 })
 

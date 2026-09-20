@@ -46,7 +46,11 @@ export const MerchantProfileSchema = MerchantProfileObjectSchema.superRefine((pr
   }
 
   for (const issue of validateNegotiationAgainstCatalogue(profile.negotiation, profile.catalogue)) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['negotiation', ...issue.path], message: issue.message })
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['negotiation', ...issue.path],
+      message: issue.message,
+    })
   }
 })
 
