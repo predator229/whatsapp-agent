@@ -1,0 +1,38 @@
+{
+  "name": "whatsapp-agent",
+  "version": "1.0.0",
+  "description": "Static coming-soon page served at https://agent.cybersds.fr",
+  "main": "app.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/predator229/whatsapp-agent.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/predator229/whatsapp-agent/issues"
+  },
+  "homepage": "https://github.com/predator229/whatsapp-agent#readme",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@nx/js": "^23.2.1",
+    "@nx/vite": "^23.2.1",
+    "@vitest/coverage-v8": "^3.2.7",
+    "nx": "23.2.1",
+    "prettier": "^3.9.8",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
+  },
+  "nx": {},
+  "dependencies": {
+    "zod": "^3.25.76"
+  }
+}
