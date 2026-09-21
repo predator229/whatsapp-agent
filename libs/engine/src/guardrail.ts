@@ -2,9 +2,9 @@
  * Garde-fou anti-hallucination : rejette toute réponse contenant un nombre non
  * autorisé pour ce tour (prix, quantité, etc.).
  *
- * Limites connues, toutes dans le sens sûr (faux rejet : coûte une réponse,
- * déclenche `GuardrailTripped`, ne laisse jamais passer un prix inventé). La
- * dernière l'est par un argument sur la valeur fusionnée, pas par construction.
+ * Limites connues, toutes sans risque pour les prix : soit un faux rejet
+ * (coûte une réponse, déclenche `GuardrailTripped`), soit un résidu qui ne
+ * porte que sur une quantité. Aucune ne laisse jamais passer un prix inventé.
  *
  * Sens sûr (faux rejet uniquement) :
  * - Les nombres écrits en toutes lettres (« deux mille ») ne sont pas détectés ;
@@ -16,13 +16,17 @@
  * - Trois chiffres après une virgule sont lus comme un groupe de milliers
  *   (« 12,555 » → 12555), jamais comme trois décimales — l'ambiguïté avec le
  *   séparateur de milliers ne peut pas être levée sans contexte.
- * - Un libellé autorisé collé à un nombre n'est pas retiré du texte avant
- *   extraction ; ses propres chiffres restent donc vérifiés (voir
- *   `stripPhrases`). À droite : directement, via des espaces, via `.`/`,`,
- *   ou via un suffixe `k`/`K`. À gauche : directement ou via des espaces
- *   seulement — voir le résidu documenté sur `stripPhrases`.
+ * - Un libellé autorisé collé à un nombre à droite — directement, via des
+ *   espaces, via `.`/`,`, ou via un suffixe `k`/`K` — n'est pas retiré du
+ *   texte avant extraction ; ses propres chiffres restent donc vérifiés
+ *   (voir `stripPhrases`).
  *
- * Résiduel, pas dans le sens sûr par construction mais sans risque ici :
+ * Résiduel, pas dans le sens sûr par construction mais sans risque pour les
+ * prix (au pire une quantité mal lue, jamais un prix inventé accepté) :
+ * - À gauche, `stripPhrases` ne détecte le collage que directement ou via des
+ *   espaces, pas via `.`/`,` (ex. « 2.500g » avec le libellé « 500g de gari »
+ *   se retire quand même, laissant échapper 2 au lieu de 2500 — une quantité,
+ *   jamais un prix). Documenté, non corrigé.
  * - Un simple espace entre deux groupes de chiffres est lu comme un
  *   groupement de milliers à la française (« 100 200 » → 100200, « 1 200 »
  *   → 1200) : c'est la lecture correcte dans une prose normale, pas une
