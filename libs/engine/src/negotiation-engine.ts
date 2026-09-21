@@ -33,6 +33,21 @@ export function applyQuantityDiscount(
 }
 
 /**
+ * Résout un tour où le bot quote `quoted` : le client gagne si son offre couvre la quote,
+ * auquel cas la vente est enregistrée à SON prix (jamais moins avantageux pour le commerçant
+ * que ce qu'il a demandé). `reason` est dérivé de la quote, jamais de `offer`.
+ */
+function resolveQuote(
+  quoted: number,
+  reason: NegotiationReason,
+  counterOffer: number,
+  round: number,
+): NegotiationOutcome {
+  const accepted = counterOffer >= quoted
+  return { accepted, offer: accepted ? counterOffer : quoted, round: round + 1, reason }
+}
+
+/**
  * Évalue une contre-offre client. Fonction pure : la politique et le produit viennent du
  * profil, `round` vient de `ConversationState.negotiation[productId]`.
  */
@@ -57,15 +72,11 @@ export function evaluateNegotiation(input: NegotiationInput): NegotiationOutcome
   const effectiveFloor = Math.min(rule.floorPrice, base)
 
   if (round >= policy.maxRounds) {
-    return { accepted: false, offer: effectiveFloor, round: round + 1, reason: 'max_rounds' }
+    return resolveQuote(effectiveFloor, 'max_rounds', counterOffer, round)
   }
 
   const step = rule.steps[round] ?? effectiveFloor
-  const offer = Math.max(effectiveFloor, Math.min(step, base))
-  return {
-    accepted: counterOffer >= offer,
-    offer,
-    round: round + 1,
-    reason: offer === effectiveFloor ? 'floor_reached' : 'counter_offer',
-  }
+  const quoted = Math.max(effectiveFloor, Math.min(step, base))
+  const reason = quoted === effectiveFloor ? 'floor_reached' : 'counter_offer'
+  return resolveQuote(quoted, reason, counterOffer, round)
 }

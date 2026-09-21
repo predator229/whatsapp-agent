@@ -102,6 +102,33 @@ describe('evaluateNegotiation', () => {
     })
   })
 
+  it('books the sale at the customer price when it overshoots the current step', () => {
+    expect(evaluateNegotiation({ ...base, counterOffer: 11500, round: 0 })).toEqual({
+      accepted: true,
+      offer: 11500,
+      round: 1,
+      reason: 'counter_offer',
+    })
+  })
+
+  it('accepts a counter-offer equal to the effective floor at maxRounds', () => {
+    expect(evaluateNegotiation({ ...base, counterOffer: 9000, round: 3 })).toEqual({
+      accepted: true,
+      offer: 9000,
+      round: 4,
+      reason: 'max_rounds',
+    })
+  })
+
+  it('books the sale at the customer price above the floor at maxRounds', () => {
+    expect(evaluateNegotiation({ ...base, counterOffer: 9500, round: 3 })).toEqual({
+      accepted: true,
+      offer: 9500,
+      round: 4,
+      reason: 'max_rounds',
+    })
+  })
+
   it('treats a disabled policy as non-negotiable', () => {
     const off = { ...policy, enabled: false }
     expect(evaluateNegotiation({ ...base, policy: off, counterOffer: 8000, round: 0 })).toEqual({
