@@ -176,4 +176,30 @@ describe('checkReply', () => {
       expect(result.offending).toContain(5000)
     }
   })
+
+  it('rejects a number glued to a stripped phrase by a k suffix', () => {
+    const result = checkReply({
+      allowedNumbers: [12000],
+      allowedPhrases: ['Pack 5'],
+      maxReplyChars: 320,
+      text: 'le Pack 5k pour toi',
+    })
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.offending).toContain(5000)
+    }
+  })
+
+  it('rejects a number that merges with a digit-bearing phrase on its left', () => {
+    const result = checkReply({
+      allowedNumbers: [2],
+      allowedPhrases: ['500g de gari'],
+      maxReplyChars: 320,
+      text: '2 500g de gari',
+    })
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.offending).toContain(2500)
+    }
+  })
 })

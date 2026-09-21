@@ -16,9 +16,11 @@
  * - Trois chiffres après une virgule sont lus comme un groupe de milliers
  *   (« 12,555 » → 12555), jamais comme trois décimales — l'ambiguïté avec le
  *   séparateur de milliers ne peut pas être levée sans contexte.
- * - Un libellé autorisé collé à un chiffre — directement, via des espaces,
- *   ou via `.`/`,` — n'est pas retiré du texte avant extraction ; ses propres
- *   chiffres restent donc vérifiés (voir `stripPhrases`).
+ * - Un libellé autorisé collé à un nombre n'est pas retiré du texte avant
+ *   extraction ; ses propres chiffres restent donc vérifiés (voir
+ *   `stripPhrases`). À droite : directement, via des espaces, via `.`/`,`,
+ *   ou via un suffixe `k`/`K`. À gauche : directement ou via des espaces
+ *   seulement — voir le résidu documenté sur `stripPhrases`.
  *
  * Résiduel, pas dans le sens sûr par construction mais sans risque ici :
  * - Un simple espace entre deux groupes de chiffres est lu comme un
@@ -73,17 +75,24 @@ function escapeRegExp(value: string): string {
 /**
  * Retire les libellés autorisés (« Riz sac 25 kg ») pour que leurs chiffres ne soient pas
  * testés. Remplace par `\n` (jamais un séparateur, jamais un chiffre) pour ne pas recoller
- * deux nombres voisins. Ne retire pas un libellé collé à un chiffre — directement, via des
- * espaces, ou via `.`/`,` immédiatement suivi d'un chiffre (ex. « Pack 5.000F ») — ce chiffre
- * reste alors dans le texte et continue d'être vérifié : ça ne peut causer qu'un faux rejet,
- * jamais une fausse acceptation.
+ * deux nombres voisins. Un libellé n'est retiré que s'il n'est collé à un nombre ni à
+ * gauche ni à droite : à droite, directement, à travers des espaces, un séparateur décimal
+ * (`.`/`,`), ou un suffixe `k`/`K` ; à gauche, directement ou à travers des espaces
+ * seulement. Conséquence volontaire : un nom de produit qui contient des chiffres et qui se
+ * trouve à côté d'un prix reste dans le texte, donc ses propres chiffres sont vérifiés et le
+ * tour peut être rejeté au lieu d'être laissé passer.
+ *
+ * Résidu documenté, non corrigé : à gauche, un `.`/`,` collé au libellé n'est pas détecté
+ * comme glu (ex. « 2.500g » avec le libellé « 500g de gari » se retire quand même, laissant
+ * échapper 2 au lieu de 2500). Porte sur une quantité, jamais sur un prix inventé.
  */
 function stripPhrases(text: string, phrases: readonly string[]): string {
+  const glue = '[\\s\\u00a0\\u202f\\u2009]*'
   return phrases.reduce(
     (acc, phrase) =>
       acc.replace(
         new RegExp(
-          `(?<!\\d)${escapeRegExp(phrase)}(?![\\s\\u00a0\\u202f\\u2009]*\\d|[.,]\\d)`,
+          `(?<!\\d${glue})${escapeRegExp(phrase)}(?!${glue}(?:\\d|[.,]\\d|[kK]\\b))`,
           'gi',
         ),
         '\n',
