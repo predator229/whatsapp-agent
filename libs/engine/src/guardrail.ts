@@ -1,3 +1,17 @@
+/**
+ * Garde-fou anti-hallucination : rejette toute réponse contenant un nombre non
+ * autorisé pour ce tour (prix, quantité, etc.).
+ *
+ * Limites connues, assumées volontairement, toutes dans le sens sûr — un
+ * faux rejet coûte une réponse et déclenche `GuardrailTripped`, jamais il ne
+ * laisse passer un prix inventé :
+ * - Les nombres écrits en toutes lettres (« deux mille ») ne sont pas détectés ;
+ *   le prompt du composer interdit explicitement cette forme.
+ * - Les heures (« 14h30 »), les dates (« 25/09 ») et les numéros de téléphone
+ *   groupés (« 97 12 34 56 ») ressortent comme autant de nombres distincts
+ *   (14 et 30, 25 et 9, 97, 12, 34, 56) plutôt qu'une seule valeur — chacun
+ *   doit être autorisé séparément ou couvert par `allowedPhrases`.
+ */
 export interface GuardrailInput {
   readonly text: string
   readonly allowedNumbers: readonly number[]
@@ -9,14 +23,21 @@ export type GuardrailResult =
   | { readonly ok: true; readonly text: string }
   | { readonly ok: false; readonly offending: readonly number[] }
 
-/** Espaces utilisées comme séparateur de milliers en français. */
+/** Espaces utilisées comme séparateur de milliers en français. Jamais décimales. */
 const THOUSAND_SPACES = /[    ]/g
-const NUMBER_PATTERN = /\d+(?:[    .,]\d{3})*(?:[kK]\b)?/g
+const NUMBER_PATTERN = /\d+(?:[    .,]\d{3})*(?:[.,]\d{1,2})?(?:[kK]\b)?/g
 
+/**
+ * Un séparateur suivi d'exactement trois chiffres est un groupe de milliers ;
+ * un `.` ou `,` suivi d'un ou deux chiffres en fin de nombre est une fraction
+ * décimale (ex. quantité en kg d'un produit vendu en vrac).
+ */
 function toNumber(raw: string): number {
   const isThousands = /[kK]$/.test(raw)
-  const digits = raw.replace(/[kK]$/, '').replace(THOUSAND_SPACES, '').replace(/[.,]/g, '')
-  const value = Number(digits)
+  const body = raw.replace(/[kK]$/, '').replace(THOUSAND_SPACES, '')
+  const decimal = body.match(/[.,](\d{1,2})$/)
+  const intPart = (decimal ? body.slice(0, -decimal[0].length) : body).replace(/[.,]/g, '')
+  const value = Number(decimal ? `${intPart}.${decimal[1]}` : intPart)
   return isThousands ? value * 1000 : value
 }
 

@@ -15,6 +15,11 @@ describe('extractNumbers', () => {
     ['2 robes à 12000 = 24000', [2, 12000, 24000]],
     ['livraison en 48h', [48]],
     ['pas de chiffre ici', []],
+    ['2,5 kg de gari', [2.5]],
+    ['2.5 kg de gari', [2.5]],
+    ['je te fais 1.5k', [1500]],
+    ['12.000 F', [12000]],
+    ['0,5 kg', [0.5]],
   ])('parses %s', (text, expected) => {
     expect(extractNumbers(text)).toEqual(expected)
   })
@@ -84,5 +89,14 @@ describe('checkReply', () => {
   it('checks numbers before truncating', () => {
     const text = 'Bonsoir. Je te fais 9500F.'
     expect(checkReply({ ...ok, text, maxReplyChars: 10 })).toEqual({ ok: false, offending: [9500] })
+  })
+
+  it('accepts a fractional bulk quantity', () => {
+    const result = checkReply({
+      allowedNumbers: [2.5, 600, 1500],
+      maxReplyChars: 320,
+      text: '2,5 kg de gari à 600F le kg, ça fait 1500F.',
+    })
+    expect(result.ok).toBe(true)
   })
 })
