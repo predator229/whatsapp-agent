@@ -21,7 +21,11 @@ import { OpenAiCompatibleProvider, LlmUnavailableError } from '../../libs/llm-pr
 import { transition } from '../../libs/engine/src/state-machine'
 import { activeProducts } from '../../libs/engine/src/catalogue'
 import { checkReply, truncateToSentence } from '../../libs/engine/src/guardrail'
-import { IntentSchema, INTENT_JSON_SCHEMA, UNCLEAR_INTENT } from '../../libs/engine/src/intent-schema'
+import {
+  IntentSchema,
+  INTENT_JSON_SCHEMA,
+  UNCLEAR_INTENT,
+} from '../../libs/engine/src/intent-schema'
 import type { Intent } from '../../libs/engine/src/intent-schema'
 import type { TurnFact } from '../../libs/engine/src/facts'
 
@@ -52,14 +56,14 @@ function intentPrompt(p: MerchantProfile, state: ConversationState): string {
     `Zones de livraison : ${p.delivery.zones.map((z) => z.name).join(', ')}`,
     '',
     'Règles :',
-    "- browse : le client ne nomme aucun produit précis (« vous avez quoi ? »).",
+    '- browse : le client ne nomme aucun produit précis (« vous avez quoi ? »).',
     '- ask_product : un produit est nommé, la question ne porte pas sur le prix.',
     '- ask_price : un produit est nommé, la question porte sur le prix.',
     '- ask_delivery : la question porte sur la zone, les frais ou le délai de livraison.',
     '- negotiate : le client propose un prix. Mets le montant proposé dans counterOffer.',
     '- add_to_cart : le client veut acheter. Mets la quantité dans productRefs[].quantity.',
     '- give_address : le client donne son adresse. Mets-la dans address.',
-    "- off_topic : horaires, adresse de la boutique, produit absent du catalogue.",
+    '- off_topic : horaires, adresse de la boutique, produit absent du catalogue.',
     '- unclear : message incompréhensible.',
     "- productRefs ne contient que des productId de la liste. Jamais d'invention.",
     history ? `\nDerniers tours :\n${history}` : '',
@@ -144,7 +148,8 @@ interface TurnResult {
 async function handleTurn(sessionId: string, text: string): Promise<TurnResult> {
   const started = Date.now()
   const receivedAt = new Date().toISOString()
-  const state = sessions.get(sessionId) ?? newConversationState(profile.merchantId, sessionId, receivedAt)
+  const state =
+    sessions.get(sessionId) ?? newConversationState(profile.merchantId, sessionId, receivedAt)
 
   const intent = await classify(text, state)
   const turn = transition({ profile, state, intent, text, receivedAt })
@@ -197,12 +202,14 @@ async function handleTurn(sessionId: string, text: string): Promise<TurnResult> 
   }
 }
 
-const page = readFileSync(fileURLToPath(new URL('./index.html', import.meta.url)), 'utf8')
+const pagePath = fileURLToPath(new URL('./index.html', import.meta.url))
+/** Relu à chaque requête : démo, on itère sur le HTML sans relancer le serveur. */
+const page = () => readFileSync(pagePath, 'utf8')
 
 const server = createServer((req, res) => {
   if (req.method === 'GET' && (req.url === '/' || req.url === '/index.html')) {
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
-    res.end(page)
+    res.end(page())
     return
   }
   if (req.method === 'GET' && req.url === '/catalogue') {
@@ -240,5 +247,7 @@ const server = createServer((req, res) => {
 })
 
 server.listen(PORT, () => {
-  process.stdout.write(`\n  Chat de démo : http://localhost:${PORT}\n  Modèle : ${process.env['LLM_MODEL'] ?? 'qwen2.5:14b-instruct-q4_K_M'}\n  Boutique : ${profile.displayName}\n\n`)
+  process.stdout.write(
+    `\n  Chat de démo : http://localhost:${PORT}\n  Modèle : ${process.env['LLM_MODEL'] ?? 'qwen2.5:14b-instruct-q4_K_M'}\n  Boutique : ${profile.displayName}\n\n`,
+  )
 })
