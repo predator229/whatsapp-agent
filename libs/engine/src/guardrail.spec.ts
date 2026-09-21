@@ -5,8 +5,8 @@ describe('extractNumbers', () => {
   it.each([
     ['la robe est à 12000F', [12000]],
     ['la robe est à 12 000 FCFA', [12000]],
-    ['la robe est à 12 000 CFA', [12000]],
-    ['la robe est à 12 000', [12000]],
+    ['la robe est à 12 000 CFA', [12000]],
+    ['la robe est à 12 000', [12000]],
     ['la robe est à 12.000', [12000]],
     ['la robe est à 12,000', [12000]],
     ['je te fais 12k', [12000]],
