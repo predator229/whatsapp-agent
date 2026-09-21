@@ -46,7 +46,7 @@ describe('MerchantProfile', () => {
     const result = MerchantProfileSchema.safeParse(bad)
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.issues[0].path).toEqual([
+      expect(result.error.issues[0]?.path).toEqual([
         'negotiation',
         'perProduct',
         'gari',
@@ -62,7 +62,7 @@ describe('MerchantProfile', () => {
     const result = MerchantProfileSchema.safeParse(bad)
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.issues[0].path).toEqual([
+      expect(result.error.issues[0]?.path).toEqual([
         'catalogue',
         pilotProfile.catalogue.length,
         'productId',
@@ -83,7 +83,7 @@ describe('MerchantProfile', () => {
     const result = MerchantProfileSchema.safeParse(bad)
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.issues[0].path).toEqual([
+      expect(result.error.issues[0]?.path).toEqual([
         'negotiation',
         'quantityDiscounts',
         1,

@@ -14,14 +14,14 @@ describe('exportProfile', () => {
   it('escapes commas and quotes in fields', () => {
     const profile = {
       ...pilotProfile,
-      catalogue: [{ ...pilotProfile.catalogue[0], name: 'Robe "wax", rouge' }],
+      catalogue: [{ ...pilotProfile.catalogue[0]!, name: 'Robe "wax", rouge' }],
     }
     expect(exportProfile(profile).catalogueCsv).toContain('"Robe ""wax"", rouge"')
   })
   it('escapes a carriage return in a field', () => {
     const profile = {
       ...pilotProfile,
-      catalogue: [{ ...pilotProfile.catalogue[0], name: 'Robe\rrouge' }],
+      catalogue: [{ ...pilotProfile.catalogue[0]!, name: 'Robe\rrouge' }],
     }
     expect(exportProfile(profile).catalogueCsv).toContain('"Robe\rrouge"')
   })

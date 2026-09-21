@@ -6,7 +6,7 @@ const ProductNegotiation = z
     floorPrice: z.number().int().nonnegative(),
     steps: z.array(z.number().int().nonnegative()),
   })
-  .refine((p) => p.steps.every((s, i) => i === 0 || s < p.steps[i - 1]), {
+  .refine((p) => p.steps.every((s, i) => i === 0 || s < p.steps.slice(0, i).at(-1)!), {
     message: 'steps must be strictly decreasing',
   })
   .refine((p) => p.steps.every((s) => s >= p.floorPrice), {

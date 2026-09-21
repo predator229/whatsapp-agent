@@ -7,7 +7,7 @@ describe('DeliveryPolicySchema', () => {
       zones: [{ name: 'Cotonou', fee: 1000, delayHours: 24 }],
       paymentMethods: ['cash_on_delivery'],
     })
-    expect(d.zones[0].fee).toBe(1000)
+    expect(d.zones[0]?.fee).toBe(1000)
   })
   it('requires at least one payment method', () => {
     expect(() => DeliveryPolicySchema.parse({ zones: [], paymentMethods: [] })).toThrow()

@@ -4,19 +4,23 @@
     "rootDir": ".",
     "sourceMap": true,
     "declaration": false,
-    "moduleResolution": "node10",
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "importHelpers": true,
-    "target": "es2015",
     "module": "esnext",
-    "lib": ["es2020", "dom"],
+    "moduleResolution": "bundler",
+    "target": "es2022",
+    "lib": ["es2022"],
+    "importHelpers": true,
     "skipLibCheck": true,
-    "skipDefaultLibCheck": true,
-    "strict": false,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
     "paths": {
-      "@wa/domain": ["./libs/domain/src/index.ts"]
+      "@wa/domain": ["./libs/domain/src/index.ts"],
+      "@wa/llm-provider": ["./libs/llm-provider/src/index.ts"],
+      "@wa/engine": ["./libs/engine/src/index.ts"]
     }
   },
-  "exclude": ["node_modules", "tmp"]
+  "exclude": ["node_modules", "tmp", "dist"]
 }

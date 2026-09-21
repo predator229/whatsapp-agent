@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config'
 import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin'
 import { nxCopyAssetsPlugin } from '@nx/vite/plugins/nx-copy-assets.plugin'
+import { coverageEnabledForTarget } from '../../tools/vitest/nx-coverage.mts'
 
 export default defineConfig(() => ({
   root: import.meta.dirname,
@@ -14,10 +15,7 @@ export default defineConfig(() => ({
     include: ['{src,tests}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     reporters: ['default'],
     coverage: {
-      // Atomized `test-ci--*` targets each run a single spec file, so per-file coverage
-      // never reaches the whole-lib thresholds below. Enforce coverage for the aggregate
-      // `test` target (and bare `vitest`), but not for the atomized `test-ci` children.
-      enabled: !(process.env['NX_TASK_TARGET_TARGET'] ?? '').startsWith('test-ci'),
+      enabled: coverageEnabledForTarget(),
       reportsDirectory: '../../coverage/libs/domain',
       provider: 'v8' as const,
       thresholds: { lines: 90, functions: 90, branches: 85 },
