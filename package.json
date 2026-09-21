@@ -6,7 +6,8 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "nx run-many -t test"
+    "test": "nx run-many -t test",
+    "chat": "vite-node -c tools/demo-chat/vite-node.config.mts tools/demo-chat/server.mts"
   },
   "author": "",
   "license": "UNLICENSED",

@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agent WhatsApp — démo locale</title>
+    <style>
+      :root {
+        --bg: #ece5dd;
+        --panel: #fff;
+        --ink: #111b21;
+        --muted: #667781;
+        --green: #075e54;
+        --bubble-me: #d9fdd3;
+        --line: #e3e3e3;
+        --warn: #b45309;
+        --bad: #b91c1c;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font: 15px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #f6f5f3;
+        color: var(--ink);
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 420px;
+        height: 100vh;
+      }
+      @media (max-width: 900px) { body { grid-template-columns: 1fr; height: auto; } }
+      .chat { display: flex; flex-direction: column; height: 100vh; border-right: 1px solid var(--line); }
+      header {
+        background: var(--green); color: #fff; padding: 12px 16px;
+        display: flex; align-items: center; gap: 12px;
+      }
+      header .av {
+        width: 38px; height: 38px; border-radius: 50%; background: #128c7e;
+        display: grid; place-items: center; font-weight: 700; font-size: 13px;
+      }
+      header b { display: block; font-size: 15px; }
+      header span { font-size: 12px; opacity: .8; }
+      header button {
+        margin-left: auto; background: rgba(255,255,255,.15); color: #fff;
+        border: 0; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 13px;
+      }
+      #log { flex: 1; overflow-y: auto; padding: 16px; background: var(--bg); }
+      .msg { max-width: 78%; margin-bottom: 10px; padding: 8px 11px; border-radius: 8px; white-space: pre-wrap; }
+      .me { background: var(--bubble-me); margin-left: auto; }
+      .bot { background: var(--panel); }
+      .meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+      form { display: flex; gap: 8px; padding: 12px; background: #f0f0f0; }
+      input {
+        flex: 1; padding: 11px 14px; border: 1px solid var(--line);
+        border-radius: 20px; font-size: 15px; outline: none;
+      }
+      input:focus { border-color: var(--green); }
+      button.send { background: var(--green); color: #fff; border: 0; border-radius: 50%; width: 42px; height: 42px; cursor: pointer; font-size: 17px; }
+      button.send:disabled { opacity: .5; cursor: default; }
+      aside { padding: 16px; overflow-y: auto; height: 100vh; }
+      aside h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 18px 0 6px; }
+      aside h2:first-child { margin-top: 0; }
+      pre { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 10px; font-size: 12px; overflow-x: auto; margin: 0; }
+      .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: #e6f4ea; color: #137333; }
+      .pill.warn { background: #fef3c7; color: var(--warn); }
+      .pill.bad { background: #fee2e2; color: var(--bad); }
+      .hint { color: var(--muted); font-size: 13px; margin: 0 0 10px; }
+      .hint code { background: #fff; padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); }
+    </style>
+  </head>
+  <body>
+    <div class="chat">
+      <header>
+        <div class="av">BM</div>
+        <div><b>Boutique Maman</b><span>agent IA · catalogue pilote</span></div>
+        <button id="reset">Réinitialiser</button>
+      </header>
+      <div id="log"></div>
+      <form id="f">
+        <input id="t" placeholder="Bonsoir, la robe rouge c'est combien ?" autocomplete="off" />
+        <button class="send" id="s">➤</button>
+      </form>
+    </div>
+
+    <aside>
+      <p class="hint">
+        Panneau de contrôle : ce que le code a décidé, avant et après le modèle. Le bot ne peut citer
+        que les nombres listés dans <code>Nombres autorisés</code> — tout le reste est rejeté.
+      </p>
+      <h2>Garde-fou</h2>
+      <div id="guard"><span class="pill">en attente</span></div>
+      <h2>Intention détectée</h2>
+      <pre id="intent">—</pre>
+      <h2>Faits du tour</h2>
+      <pre id="facts">—</pre>
+      <h2>Nombres autorisés</h2>
+      <pre id="nums">—</pre>
+      <h2>Panier / phase</h2>
+      <pre id="cart">—</pre>
+      <h2>Catalogue réel</h2>
+      <pre id="cat">chargement…</pre>
+    </aside>
+
+    <script>
+      const sessionId = 'demo-' + Math.random().toString(36).slice(2, 8)
+      const log = document.getElementById('log')
+      const f = document.getElementById('f')
+      const t = document.getElementById('t')
+      const s = document.getElementById('s')
+
+      function bubble(cls, text, meta) {
+        const d = document.createElement('div')
+        d.className = 'msg ' + cls
+        d.textContent = text
+        if (meta) {
+          const m = document.createElement('div')
+          m.className = 'meta'
+          m.textContent = meta
+          d.appendChild(m)
+        }
+        log.appendChild(d)
+        log.scrollTop = log.scrollHeight
+        return d
+      }
+
+      fetch('/catalogue')
+        .then((r) => r.json())
+        .then((c) => {
+          document.getElementById('cat').textContent = c.products
+            .map((p) => {
+              if (p.pricing.kind === 'unit')
+                return p.pricing.variants
+                  .map((v) => `${p.name} ${v.label} — ${v.price} XOF (stock ${v.stock ?? '∞'})`)
+                  .join('\n')
+              if (p.pricing.kind === 'bulk')
+                return `${p.name} — ${p.pricing.pricePerUnit} XOF/${p.pricing.unitOfMeasure} (min ${p.pricing.minQuantity}, stock ${p.pricing.stockQuantity ?? '∞'})`
+              return `${p.name} — ${p.pricing.basePrice} XOF, ${p.pricing.leadTimeDays} j, acompte ${p.pricing.depositPercent}%`
+            })
+            .join('\n')
+        })
+
+      document.getElementById('reset').onclick = async () => {
+        await fetch('/reset', { method: 'POST' })
+        log.innerHTML = ''
+        for (const id of ['intent', 'facts', 'nums', 'cart']) document.getElementById(id).textContent = '—'
+        document.getElementById('guard').innerHTML = '<span class="pill">en attente</span>'
+      }
+
+      f.onsubmit = async (e) => {
+        e.preventDefault()
+        const text = t.value.trim()
+        if (!text) return
+        bubble('me', text)
+        t.value = ''
+        s.disabled = true
+        const pending = bubble('bot', '…')
+        try {
+          const r = await fetch('/chat', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ sessionId, text }),
+          })
+          const d = await r.json()
+          if (d.error) {
+            pending.textContent = '⚠ ' + d.error
+            return
+          }
+          pending.textContent = d.reply
+          const m = document.createElement('div')
+          m.className = 'meta'
+          m.textContent = `${d.intent.intent} · ${d.ms} ms · garde-fou ${d.guardrail}`
+          pending.appendChild(m)
+          log.scrollTop = log.scrollHeight
+
+          const g = document.getElementById('guard')
+          const cls = d.guardrail === 'ok' ? '' : d.guardrail === 'regenerated' ? ' warn' : ' bad'
+          const label =
+            d.guardrail === 'ok'
+              ? 'accepté du premier coup'
+              : d.guardrail === 'regenerated'
+                ? 'nombre inventé rejeté, réponse régénérée'
+                : 'deux échecs, réponse de secours du commerçant'
+          g.innerHTML = `<span class="pill${cls}">${label}</span>`
+
+          document.getElementById('intent').textContent = JSON.stringify(d.intent, null, 2)
+          document.getElementById('facts').textContent = JSON.stringify(d.facts, null, 2)
+          document.getElementById('nums').textContent =
+            d.allowedNumbers.join(', ') + '\n\nlibellés : ' + (d.allowedPhrases.join(' | ') || '—')
+          document.getElementById('cart').textContent =
+            'phase : ' + d.phase + '\nevents : ' + (d.events.join(', ') || '—') + '\n\n' + JSON.stringify(d.cart, null, 2)
+        } catch (err) {
+          pending.textContent = '⚠ ' + err
+        } finally {
+          s.disabled = false
+          t.focus()
+        }
+      }
+      t.focus()
+    </script>
+  </body>
+</html>
