@@ -1,0 +1,9 @@
+{
+  "name": "llm-provider",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/llm-provider/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project llm-provider --web",
+  "targets": {}
+}
