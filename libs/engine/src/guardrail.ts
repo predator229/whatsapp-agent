@@ -2,15 +2,30 @@
  * Garde-fou anti-hallucination : rejette toute réponse contenant un nombre non
  * autorisé pour ce tour (prix, quantité, etc.).
  *
- * Limites connues, assumées volontairement, toutes dans le sens sûr — un
- * faux rejet coûte une réponse et déclenche `GuardrailTripped`, jamais il ne
- * laisse passer un prix inventé :
+ * Limites connues, toutes dans le sens sûr (faux rejet : coûte une réponse,
+ * déclenche `GuardrailTripped`, ne laisse jamais passer un prix inventé). La
+ * dernière l'est par un argument de grandeur, pas par construction.
+ *
+ * Sens sûr (faux rejet uniquement) :
  * - Les nombres écrits en toutes lettres (« deux mille ») ne sont pas détectés ;
  *   le prompt du composer interdit explicitement cette forme.
  * - Les heures (« 14h30 »), les dates (« 25/09 ») et les numéros de téléphone
  *   groupés (« 97 12 34 56 ») ressortent comme autant de nombres distincts
  *   (14 et 30, 25 et 9, 97, 12, 34, 56) plutôt qu'une seule valeur — chacun
  *   doit être autorisé séparément ou couvert par `allowedPhrases`.
+ * - Trois chiffres après une virgule sont lus comme un groupe de milliers
+ *   (« 12,555 » → 12555), jamais comme trois décimales — l'ambiguïté avec le
+ *   séparateur de milliers ne peut pas être levée sans contexte.
+ *
+ * Résiduel, pas dans le sens sûr par construction mais sans risque ici :
+ * - Deux nombres bien formés séparés par un espace fusionnent si les DEUX sont
+ *   des groupes de milliers complets (3 chiffres après chaque séparateur),
+ *   ex. « 100 000 250 000 » → 100000250000. Le garde-fou contre la fusion
+ *   dangereuse (un match qui s'arrête au milieu d'un nombre, ex. « 1 2000 »
+ *   lu comme 1200 en laissant échapper le vrai 2000) est le `(?!\d)` final
+ *   du motif ; ce résidu ne peut produire qu'une valeur fusionnée bien plus
+ *   grande que n'importe quel prix réel, donc jamais présente dans
+ *   `allowedNumbers` — elle est rejetée, pas acceptée à tort.
  */
 export interface GuardrailInput {
   readonly text: string
@@ -25,7 +40,7 @@ export type GuardrailResult =
 
 /** Espaces utilisées comme séparateur de milliers en français. Jamais décimales. */
 const THOUSAND_SPACES = /[    ]/g
-const NUMBER_PATTERN = /\d+(?:[    .,]\d{3})*(?:[.,]\d{1,2})?(?:[kK]\b)?/g
+const NUMBER_PATTERN = /\d+(?:[    .,]\d{3})*(?:[.,]\d{1,2})?(?:[kK]\b)?(?!\d)/g
 
 /**
  * Un séparateur suivi d'exactement trois chiffres est un groupe de milliers ;

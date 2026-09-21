@@ -20,6 +20,9 @@ describe('extractNumbers', () => {
     ['je te fais 1.5k', [1500]],
     ['12.000 F', [12000]],
     ['0,5 kg', [0.5]],
+    ['la robe est à 12 000', [12000]],
+    ['5000 7000 9000', [5000, 7000, 9000]],
+    ['1 2000F', [1, 2000]],
   ])('parses %s', (text, expected) => {
     expect(extractNumbers(text)).toEqual(expected)
   })
@@ -98,5 +101,17 @@ describe('checkReply', () => {
       text: '2,5 kg de gari à 600F le kg, ça fait 1500F.',
     })
     expect(result.ok).toBe(true)
+  })
+
+  it('rejects a number that would otherwise merge with its neighbour', () => {
+    const result = checkReply({
+      allowedNumbers: [1200, 0],
+      maxReplyChars: 320,
+      text: 'Je te fais 1 2000F, cadeau inclus.',
+    })
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.offending).toContain(2000)
+    }
   })
 })
