@@ -1170,8 +1170,11 @@ export function applyQuantityDiscount(
 2. Si `policy.enabled` est faux **ou** qu'il n'y a pas de règle `perProduct[productId]` : aucun contre-prix. `accepted = counterOffer >= base`, `offer = base`, `reason = 'not_negotiable'`, `round` inchangé.
 3. Plancher effectif = `Math.min(rule.floorPrice, base)` (une remise quantité peut descendre sous le plancher nominal ; on ne remonte jamais un prix déjà consenti).
 4. Si `counterOffer >= base` : accepté au prix de base (jamais plus cher que l'affiché), `reason = 'accepted_customer_offer'`, `round` inchangé.
-5. Sinon, si `round >= policy.maxRounds` : refus ferme, `accepted = false`, `offer = effectiveFloor`, `round + 1`, `reason = 'max_rounds'`.
-6. Sinon, le contre-prix est `Math.max(effectiveFloor, Math.min(rule.steps[round] ?? effectiveFloor, base))`. `accepted = counterOffer >= offer`. `round + 1`. `reason = 'floor_reached'` si `offer === effectiveFloor`, sinon `'counter_offer'`.
+5. Sinon, si `round >= policy.maxRounds` : `quoted = effectiveFloor`.
+6. Sinon, `quoted = Math.max(effectiveFloor, Math.min(rule.steps[round] ?? effectiveFloor, base))`.
+7. Dans les deux cas : `accepted = counterOffer >= quoted`, `offer = accepted ? counterOffer : quoted`, `round + 1`. `reason` est `'max_rounds'` au cas 5 ; au cas 6, `'floor_reached'` si `quoted === effectiveFloor`, sinon `'counter_offer'`. **`reason` se dérive de `quoted`, jamais de `offer`.**
+
+> **Amendement 2026-09-21 (revue de la tâche 5, commit 3615327).** Les règles 5 et 6 ci-dessus corrigent deux défauts de la première rédaction, tous deux au détriment du commerçant : (a) à l'acceptation, le moteur retenait son propre palier au lieu du prix proposé par le client — un client offrant 11 500 contre un palier à 11 000 faisait enregistrer la vente à 11 000, alors que `offer` devient l'`agreedPrice` du panier ; (b) au dernier tour, `accepted` était inconditionnellement faux, donc un client proposant exactement le plancher effectif était refusé et le plancher n'était jamais atteignable comme prix de vente. La règle 4 reste le plafond : le bot ne peut toujours pas facturer au-dessus du prix affiché ou remisé. **Le bloc de code ci-dessous est antérieur à cet amendement — les règles font foi, pas le bloc.**
 
 - [ ] **Step 1: Générer la lib**
 
