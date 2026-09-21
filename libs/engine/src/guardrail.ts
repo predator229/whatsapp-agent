@@ -4,7 +4,7 @@
  *
  * Limites connues, toutes dans le sens sûr (faux rejet : coûte une réponse,
  * déclenche `GuardrailTripped`, ne laisse jamais passer un prix inventé). La
- * dernière l'est par un argument de grandeur, pas par construction.
+ * dernière l'est par un argument sur la valeur fusionnée, pas par construction.
  *
  * Sens sûr (faux rejet uniquement) :
  * - Les nombres écrits en toutes lettres (« deux mille ») ne sont pas détectés ;
@@ -16,15 +16,20 @@
  * - Trois chiffres après une virgule sont lus comme un groupe de milliers
  *   (« 12,555 » → 12555), jamais comme trois décimales — l'ambiguïté avec le
  *   séparateur de milliers ne peut pas être levée sans contexte.
+ * - Un libellé autorisé collé à un chiffre — directement, via des espaces,
+ *   ou via `.`/`,` — n'est pas retiré du texte avant extraction ; ses propres
+ *   chiffres restent donc vérifiés (voir `stripPhrases`).
  *
  * Résiduel, pas dans le sens sûr par construction mais sans risque ici :
- * - Deux nombres bien formés séparés par un espace fusionnent si les DEUX sont
- *   des groupes de milliers complets (3 chiffres après chaque séparateur),
- *   ex. « 100 000 250 000 » → 100000250000. Le garde-fou contre la fusion
- *   dangereuse (un match qui s'arrête au milieu d'un nombre, ex. « 1 2000 »
- *   lu comme 1200 en laissant échapper le vrai 2000) est le `(?!\d)` final
- *   du motif ; ce résidu ne peut produire qu'une valeur fusionnée bien plus
- *   grande que n'importe quel prix réel, donc jamais présente dans
+ * - Un simple espace entre deux groupes de chiffres est lu comme un
+ *   groupement de milliers à la française (« 100 200 » → 100200, « 1 200 »
+ *   → 1200) : c'est la lecture correcte dans une prose normale, pas une
+ *   fuite. Le risque résiduel est l'énumération brute, sans mot de liaison,
+ *   de plusieurs nombres déjà complets (ex. « 100 000 250 000 » →
+ *   100000250000) : le déclencheur est une suite de chiffres suivie d'un
+ *   séparateur puis d'exactement trois chiffres, répétable — la forme du
+ *   premier groupe n'a pas d'importance. La valeur fusionnée qui en résulte
+ *   n'est jamais un montant réel du catalogue, donc jamais présente dans
  *   `allowedNumbers` — elle est rejetée, pas acceptée à tort.
  */
 export interface GuardrailInput {
@@ -65,10 +70,24 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-/** Retire les libellés autorisés (« Riz sac 25 kg ») pour que leurs chiffres ne soient pas testés. */
+/**
+ * Retire les libellés autorisés (« Riz sac 25 kg ») pour que leurs chiffres ne soient pas
+ * testés. Remplace par `\n` (jamais un séparateur, jamais un chiffre) pour ne pas recoller
+ * deux nombres voisins. Ne retire pas un libellé collé à un chiffre — directement, via des
+ * espaces, ou via `.`/`,` immédiatement suivi d'un chiffre (ex. « Pack 5.000F ») — ce chiffre
+ * reste alors dans le texte et continue d'être vérifié : ça ne peut causer qu'un faux rejet,
+ * jamais une fausse acceptation.
+ */
 function stripPhrases(text: string, phrases: readonly string[]): string {
   return phrases.reduce(
-    (acc, phrase) => acc.replace(new RegExp(escapeRegExp(phrase), 'gi'), ' '),
+    (acc, phrase) =>
+      acc.replace(
+        new RegExp(
+          `(?<!\\d)${escapeRegExp(phrase)}(?![\\s\\u00a0\\u202f\\u2009]*\\d|[.,]\\d)`,
+          'gi',
+        ),
+        '\n',
+      ),
     text,
   )
 }

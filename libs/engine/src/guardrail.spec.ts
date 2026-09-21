@@ -114,4 +114,66 @@ describe('checkReply', () => {
       expect(result.offending).toContain(2000)
     }
   })
+
+  it('rejects a number that would otherwise re-merge across a stripped phrase gap', () => {
+    const result = checkReply({
+      allowedNumbers: [0],
+      allowedPhrases: ['Pack 5'],
+      maxReplyChars: 320,
+      text: 'le Pack 5 000F',
+    })
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.offending).toContain(5000)
+    }
+  })
+
+  it('rejects a number left exposed when a phrase is only a prefix of it', () => {
+    const result = checkReply({
+      allowedNumbers: [8],
+      allowedPhrases: ['iPhone 12'],
+      maxReplyChars: 320,
+      text: 'iPhone 128',
+    })
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.offending).toContain(128)
+    }
+  })
+
+  it('still strips a digit-bearing phrase when it is not adjacent to another number', () => {
+    const result = checkReply({
+      allowedNumbers: [12000],
+      allowedPhrases: ['Pack 5'],
+      maxReplyChars: 320,
+      text: 'le Pack 5 à 12000F',
+    })
+    expect(result.ok).toBe(true)
+  })
+
+  it('rejects a number glued to a stripped phrase by a dot', () => {
+    const result = checkReply({
+      allowedNumbers: [0],
+      allowedPhrases: ['Pack 5'],
+      maxReplyChars: 320,
+      text: 'le Pack 5.000F',
+    })
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.offending).toContain(5000)
+    }
+  })
+
+  it('rejects a number glued to a stripped phrase by a comma', () => {
+    const result = checkReply({
+      allowedNumbers: [0],
+      allowedPhrases: ['Pack 5'],
+      maxReplyChars: 320,
+      text: 'le Pack 5,000F',
+    })
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.offending).toContain(5000)
+    }
+  })
 })
