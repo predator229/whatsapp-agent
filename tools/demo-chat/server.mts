@@ -56,13 +56,17 @@ function intentPrompt(p: MerchantProfile, state: ConversationState): string {
     `Zones de livraison : ${p.delivery.zones.map((z) => z.name).join(', ')}`,
     '',
     'Règles :',
-    '- browse : le client ne nomme aucun produit précis (« vous avez quoi ? »).',
+    '- greet : le client salue ou ouvre la conversation sans rien demander (« yo », « bonsoir »).',
+    '- browse : le client demande ce que tu vends, sans nommer de produit précis.',
     '- ask_product : un produit est nommé, la question ne porte pas sur le prix.',
     '- ask_price : un produit est nommé, la question porte sur le prix.',
     '- ask_delivery : la question porte sur la zone, les frais ou le délai de livraison.',
     '- negotiate : le client propose un prix. Mets le montant proposé dans counterOffer.',
     '- add_to_cart : le client veut acheter. Mets la quantité dans productRefs[].quantity.',
     '- give_address : le client donne son adresse. Mets-la dans address.',
+    '- remove_from_cart : le client retire un article du panier.',
+    '- confirm_order : le client valide sa commande.',
+    '- cancel : le client renonce à tout.',
     '- off_topic : horaires, adresse de la boutique, produit absent du catalogue.',
     '- unclear : message incompréhensible.',
     "- productRefs ne contient que des productId de la liste. Jamais d'invention.",
@@ -72,8 +76,18 @@ function intentPrompt(p: MerchantProfile, state: ConversationState): string {
 
 const EMOJI_RULE = ['Aucun emoji.', 'Un emoji maximum.', 'Deux emojis maximum.'] as const
 
-function composerPrompt(p: MerchantProfile, facts: TurnFact[], allowed: number[]): string {
+function composerPrompt(
+  p: MerchantProfile,
+  facts: TurnFact[],
+  allowed: number[],
+  state: ConversationState,
+): string {
   const s = p.style
+  const liste = facts.some((f) => f.kind === 'ProductsFound')
+  const histoire = state.turns
+    .slice(-4)
+    .map((t) => `${t.role === 'customer' ? 'Client' : 'Toi'}: ${t.text}`)
+    .join('\n')
   return [
     `Tu écris à la place du commerçant, ton ${s.tone}, en disant « ${s.addressForm} ».`,
     `Salutation habituelle : « ${s.greeting} ». Signature : « ${s.signoff} ».`,
@@ -85,6 +99,11 @@ function composerPrompt(p: MerchantProfile, facts: TurnFact[], allowed: number[]
     'Faits du tour (les seules informations vraies dont tu disposes) :',
     JSON.stringify(facts, null, 2),
     '',
+    histoire ? `Ce qui vient d'être dit :\n${histoire}\n` : '',
+    'Ne répète jamais mot pour mot ta réponse précédente : le client a relancé, fais avancer la vente.',
+    liste
+      ? 'Le fait « ProductsFound » est une liste : cite CHAQUE produit avec son prix, sans en oublier un seul.'
+      : '',
     `Nombres autorisés : ${allowed.join(', ')}.`,
     "N'écris aucun autre nombre. N'invente ni prix, ni stock, ni délai.",
     "N'écris jamais un nombre en toutes lettres : utilise les chiffres.",
@@ -115,10 +134,11 @@ async function classify(text: string, state: ConversationState): Promise<Intent>
 async function compose(
   facts: TurnFact[],
   allowed: number[],
+  state: ConversationState,
   correction?: { draft: string; offending: readonly number[] },
 ): Promise<string> {
   const res = await provider.complete({
-    system: composerPrompt(profile, facts, allowed),
+    system: composerPrompt(profile, facts, allowed, state),
     messages: [
       {
         role: 'user',
@@ -164,13 +184,13 @@ async function handleTurn(sessionId: string, text: string): Promise<TurnResult> 
 
   let verdict: TurnResult['guardrail'] = 'ok'
   let reply: string
-  const first = await compose(turn.facts, turn.allowedNumbers)
+  const first = await compose(turn.facts, turn.allowedNumbers, state)
   const firstCheck = guard(first)
   if (firstCheck.ok) {
     reply = firstCheck.text
   } else {
     verdict = 'regenerated'
-    const second = await compose(turn.facts, turn.allowedNumbers, {
+    const second = await compose(turn.facts, turn.allowedNumbers, state, {
       draft: first,
       offending: firstCheck.offending,
     })
