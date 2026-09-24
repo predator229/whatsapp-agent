@@ -1,0 +1,889 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Banc de contrôle — Boutique Maman</title>
+    <style>
+      /*
+        Deux mondes, volontairement distincts :
+        — la colonne de gauche est ce que le bot PRÉTEND (monde WhatsApp, vert, bulles)
+        — la colonne de droite est ce que le code PROUVE (monde papier, carnet réglé, encre)
+        Le vert ne franchit jamais la frontière, le papier non plus.
+      */
+      :root {
+        /* encre et papier : le cahier de la commerçante */
+        --papier: #f4efe4;
+        --papier-page: #fbf7ee;
+        --papier-creux: #ebe4d5;
+        --encre: #2b2419;
+        --encre-2: #5c5240;
+        --encre-3: #8a7f69;
+        --encre-4: #b3a992;
+        --reglure: rgba(43, 36, 25, 0.09);
+        --trait: rgba(43, 36, 25, 0.14);
+        --trait-fort: rgba(43, 36, 25, 0.26);
+
+        /* pigments du wax et du marché */
+        --indigo: #2f4858;
+        --ocre: #b07d2b;
+        --terre: #9c3b22;
+        --feuille: #3f6b47;
+
+        /* le seul vert autorisé : celui du téléphone */
+        --wa-vert: #075e54;
+        --wa-vert-clair: #128c7e;
+        --wa-fond: #e9e2d8;
+        --wa-bulle-moi: #dcf8c6;
+        --wa-bulle-lui: #ffffff;
+
+        --r-petit: 5px;
+        --r-moyen: 9px;
+        --r-bulle: 10px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        background: var(--papier);
+        color: var(--encre);
+        font:
+          15px/1.55 'Inter',
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 460px;
+      }
+      @media (max-width: 1040px) {
+        body {
+          grid-template-columns: 1fr;
+          height: auto;
+        }
+      }
+
+      /* ───────────────────────── colonne conversation ───────────────────────── */
+      .conversation {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        border-right: 1px solid var(--trait);
+        background: var(--wa-fond);
+      }
+      @media (max-width: 1040px) {
+        .conversation {
+          height: 85vh;
+        }
+      }
+      .barre {
+        background: var(--wa-vert);
+        color: #fff;
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: none;
+      }
+      .avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--wa-vert-clair);
+        display: grid;
+        place-items: center;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        flex: none;
+      }
+      .barre b {
+        display: block;
+        font-size: 15px;
+        font-weight: 600;
+        line-height: 1.2;
+      }
+      .barre small {
+        font-size: 11.5px;
+        opacity: 0.75;
+      }
+      .barre button {
+        margin-left: auto;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: var(--r-petit);
+        padding: 5px 10px;
+        font-size: 12.5px;
+        cursor: pointer;
+        transition: background 120ms ease;
+      }
+      .barre button:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+
+      #fil {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 20px 20px 8px;
+        display: flex;
+        flex-direction: column;
+      }
+      /* `margin-top: auto` colle les messages en bas sans casser le défilement,
+         contrairement à `justify-content: flex-end` qui rogne le haut au débordement. */
+      #fil-interieur {
+        margin-top: auto;
+        width: 100%;
+      }
+      .bulle {
+        max-width: 80%;
+        margin-bottom: 9px;
+        padding: 7px 10px 6px;
+        border-radius: var(--r-bulle);
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-size: 14.5px;
+        box-shadow: 0 1px 0.5px rgba(43, 36, 25, 0.13);
+      }
+      .bulle.moi {
+        background: var(--wa-bulle-moi);
+        margin-left: auto;
+        border-top-right-radius: 3px;
+      }
+      .bulle.lui {
+        background: var(--wa-bulle-lui);
+        border-top-left-radius: 3px;
+      }
+      .bulle .pied {
+        font-size: 10.5px;
+        color: var(--encre-3);
+        margin-top: 3px;
+        display: flex;
+        gap: 7px;
+        align-items: center;
+        justify-content: flex-end;
+        font-variant-numeric: tabular-nums;
+      }
+      /* le lien visuel entre la bulle et le carnet : un nombre vérifié est souligné à l'ocre */
+      .chiffre {
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+        white-space: nowrap;
+        box-shadow: inset 0 -0.45em 0 rgba(176, 125, 43, 0.22);
+        padding: 0 1px;
+      }
+      .chiffre.hors {
+        box-shadow: inset 0 -0.45em 0 rgba(156, 59, 34, 0.28);
+        color: var(--terre);
+      }
+
+      /* état vide = protocole d'essai, pas un vide */
+      .protocole {
+        padding: 4px 2px 0;
+      }
+      .protocole h2 {
+        font:
+          600 13px/1.4 ui-serif,
+          Georgia,
+          serif;
+        letter-spacing: 0.02em;
+        color: var(--encre-2);
+        margin: 0 0 3px;
+      }
+      .protocole p {
+        margin: 0 0 14px;
+        font-size: 12.5px;
+        color: var(--encre-3);
+        max-width: 46ch;
+      }
+      .essais {
+        display: grid;
+        gap: 6px;
+      }
+      .essai {
+        text-align: left;
+        background: rgba(255, 255, 255, 0.62);
+        border: 1px solid var(--trait);
+        border-radius: var(--r-moyen);
+        padding: 9px 11px;
+        cursor: pointer;
+        font: inherit;
+        font-size: 13.5px;
+        color: var(--encre);
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: baseline;
+        transition:
+          border-color 120ms ease,
+          background 120ms ease;
+      }
+      .essai:hover {
+        background: #fff;
+        border-color: var(--trait-fort);
+      }
+      .essai .attendu {
+        font-size: 11.5px;
+        color: var(--encre-3);
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      form {
+        display: flex;
+        gap: 9px;
+        padding: 11px 14px 14px;
+        background: var(--wa-fond);
+        flex: none;
+        align-items: center;
+      }
+      #saisie {
+        flex: 1;
+        padding: 11px 15px;
+        border: 1px solid var(--trait);
+        background: #fff;
+        border-radius: 21px;
+        font: inherit;
+        font-size: 14.5px;
+        outline: none;
+        color: var(--encre);
+        transition: border-color 120ms ease;
+      }
+      #saisie::placeholder {
+        color: var(--encre-3);
+      }
+      #saisie:focus {
+        border-color: var(--wa-vert-clair);
+      }
+      #envoyer {
+        width: 42px;
+        height: 42px;
+        flex: none;
+        border: 0;
+        border-radius: 50%;
+        background: var(--wa-vert);
+        color: #fff;
+        font-size: 15px;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        transition: opacity 120ms ease;
+      }
+      #envoyer:disabled {
+        opacity: 0.4;
+        cursor: default;
+      }
+
+      /* ───────────────────────── colonne carnet ───────────────────────── */
+      .carnet {
+        height: 100vh;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        background: var(--papier-page);
+        /* réglure du cahier : une ligne tous les 28px, très pâle */
+        background-image: repeating-linear-gradient(
+          to bottom,
+          transparent 0 27px,
+          var(--reglure) 27px 28px
+        );
+      }
+      @media (max-width: 1040px) {
+        .carnet {
+          height: auto;
+        }
+      }
+      .carnet-tete {
+        padding: 16px 20px 13px;
+        border-bottom: 1px solid var(--trait);
+        background: var(--papier-page);
+        position: sticky;
+        top: 0;
+        z-index: 2;
+      }
+      .carnet-tete h1 {
+        font:
+          600 15px/1.3 ui-serif,
+          Georgia,
+          serif;
+        margin: 0 0 4px;
+        letter-spacing: 0.01em;
+      }
+      .carnet-tete p {
+        margin: 0;
+        font-size: 12.5px;
+        color: var(--encre-3);
+        max-width: 48ch;
+      }
+
+      .entree {
+        padding: 15px 20px 17px;
+        border-bottom: 1px solid var(--trait);
+      }
+      .entree-tete {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 11px;
+      }
+      .entree-tete .dit {
+        flex: 1;
+        min-width: 0;
+      }
+      .entree-tete .num {
+        font:
+          600 11px/1 ui-serif,
+          Georgia,
+          serif;
+        color: var(--encre-3);
+        letter-spacing: 0.08em;
+        padding-top: 3px;
+      }
+      .entree-tete .txt {
+        font-size: 13px;
+        color: var(--encre-2);
+        font-style: italic;
+      }
+
+      /* le tampon : verdict du garde-fou, encré comme sur un reçu */
+      .tampon {
+        flex: none;
+        border: 1.5px solid currentColor;
+        border-radius: var(--r-petit);
+        padding: 3px 8px 2px;
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        transform: rotate(-3deg);
+        opacity: 0.86;
+      }
+      .tampon.ok {
+        color: var(--feuille);
+      }
+      .tampon.repris {
+        color: var(--ocre);
+      }
+      .tampon.refuse {
+        color: var(--terre);
+      }
+
+      .ligne {
+        display: grid;
+        grid-template-columns: 92px 1fr;
+        gap: 12px;
+        margin-bottom: 8px;
+        align-items: baseline;
+      }
+      .ligne dt {
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--encre-3);
+        font-weight: 600;
+      }
+      .ligne dd {
+        margin: 0;
+        font-size: 13px;
+      }
+
+      /* les jetons : mêmes objets que les nombres surlignés dans la bulle */
+      .jetons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+      }
+      .jeton {
+        font-variant-numeric: tabular-nums;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 2px 7px;
+        border-radius: var(--r-petit);
+        background: rgba(176, 125, 43, 0.13);
+        border: 1px solid rgba(176, 125, 43, 0.3);
+        color: #6d4c14;
+      }
+      .jeton.mot {
+        background: rgba(47, 72, 88, 0.09);
+        border-color: rgba(47, 72, 88, 0.22);
+        color: var(--indigo);
+        font-variant-numeric: normal;
+        font-weight: 500;
+      }
+      .fait {
+        font-size: 12.5px;
+        color: var(--encre-2);
+        padding: 4px 0 4px 11px;
+        border-left: 2px solid rgba(47, 72, 88, 0.3);
+        margin-bottom: 4px;
+      }
+      .fait b {
+        color: var(--indigo);
+        font-weight: 600;
+      }
+      .fait .v {
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+        color: var(--encre);
+      }
+      .sobre {
+        color: var(--encre-3);
+        font-size: 12.5px;
+      }
+
+      details.brut {
+        margin-top: 10px;
+      }
+      details.brut summary {
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--encre-3);
+        cursor: pointer;
+        font-weight: 600;
+      }
+      details.brut pre {
+        margin: 8px 0 0;
+        background: var(--papier-creux);
+        border: 1px solid var(--trait);
+        border-radius: var(--r-petit);
+        padding: 9px 11px;
+        font-size: 11.5px;
+        line-height: 1.5;
+        overflow-x: auto;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* pied de carnet : le catalogue réel, la source de vérité */
+      .source {
+        padding: 12px 20px 16px;
+        position: sticky;
+        bottom: 0;
+        background: var(--papier-page);
+        border-top: 1px solid var(--trait);
+        box-shadow: 0 -8px 16px -12px rgba(43, 36, 25, 0.35);
+      }
+      .source > summary {
+        list-style: none;
+        cursor: pointer;
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+      }
+      .source > summary::-webkit-details-marker {
+        display: none;
+      }
+      .source > summary::after {
+        content: 'déplier';
+        margin-left: auto;
+        font-size: 11px;
+        color: var(--encre-3);
+        letter-spacing: 0.04em;
+      }
+      .source[open] > summary::after {
+        content: 'replier';
+      }
+      .source h2 {
+        font:
+          600 12px/1 ui-serif,
+          Georgia,
+          serif;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--encre-3);
+        margin: 0 0 3px;
+      }
+      .source p {
+        margin: 0 0 11px;
+        font-size: 12px;
+        color: var(--encre-3);
+      }
+      .article {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        padding: 7px 0;
+        border-bottom: 1px dotted var(--trait);
+        align-items: baseline;
+      }
+      .article:last-child {
+        border-bottom: 0;
+      }
+      .article .nom {
+        font-size: 13px;
+      }
+      .article .det {
+        font-size: 11.5px;
+        color: var(--encre-3);
+      }
+      .article .prix {
+        font-variant-numeric: tabular-nums;
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .article .prix small {
+        font-weight: 400;
+        color: var(--encre-3);
+      }
+
+      .attente {
+        display: inline-flex;
+        gap: 4px;
+        align-items: center;
+      }
+      .attente i {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--encre-3);
+        animation: pulse 1.1s infinite ease-in-out;
+      }
+      .attente i:nth-child(2) {
+        animation-delay: 0.16s;
+      }
+      .attente i:nth-child(3) {
+        animation-delay: 0.32s;
+      }
+      @keyframes pulse {
+        0%,
+        70%,
+        100% {
+          opacity: 0.28;
+        }
+        35% {
+          opacity: 1;
+        }
+      }
+      .compteur {
+        font-variant-numeric: tabular-nums;
+        color: var(--encre-3);
+        font-size: 10.5px;
+      }
+      .alerte {
+        background: rgba(156, 59, 34, 0.07);
+        border: 1px solid rgba(156, 59, 34, 0.25);
+        color: var(--terre);
+        border-radius: var(--r-moyen);
+        padding: 9px 11px;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="conversation">
+      <div class="barre">
+        <div class="avatar">BM</div>
+        <div>
+          <b>Boutique Maman</b>
+          <small id="sous-titre">Cotonou · agent en ligne</small>
+        </div>
+        <button id="reinit">Nouvelle conversation</button>
+      </div>
+
+      <div id="fil">
+        <div id="fil-interieur">
+          <div class="protocole" id="protocole">
+            <h2>Banc d'essai</h2>
+            <p>
+              Écris comme un client béninois. Chaque réponse est contrôlée par le code avant de
+              t'atteindre — le carnet à droite montre ce qui a été autorisé.
+            </p>
+            <div class="essais" id="essais"></div>
+          </div>
+        </div>
+      </div>
+
+      <form id="formulaire">
+        <input
+          id="saisie"
+          placeholder="Bonsoir tantie, la robe rouge c'est combien ?"
+          autocomplete="off"
+        />
+        <button id="envoyer" title="Envoyer">➤</button>
+      </form>
+    </main>
+
+    <aside class="carnet">
+      <div class="carnet-tete">
+        <h1>Carnet de contrôle</h1>
+        <p>
+          Le modèle ne voit jamais le catalogue. Il ne reçoit que les faits établis ci-dessous et la
+          liste des nombres qu'il a le droit d'écrire.
+        </p>
+      </div>
+      <div id="entrees"></div>
+      <div style="flex: 1"></div>
+      <details class="source" id="source" open>
+        <summary>
+          <h2>Catalogue réel</h2>
+          <p style="margin: 0">la seule source de vérité</p>
+        </summary>
+        <div id="catalogue"><span class="sobre">chargement…</span></div>
+      </details>
+    </aside>
+
+    <script>
+      const sessionId = 'banc-' + Math.random().toString(36).slice(2, 8)
+      const fil = document.getElementById('fil')
+      const entrees = document.getElementById('entrees')
+      const protocole = document.getElementById('protocole')
+      const saisie = document.getElementById('saisie')
+      const envoyer = document.getElementById('envoyer')
+      let tour = 0
+
+      const ESSAIS = [
+        ['la robe rouge c’est combien ?', 'prix + stock réels'],
+        ['12000 c’est trop, je te donne 9000', 'contre-offre bornée'],
+        ['allez 5000 et je prends tout de suite', 'refus, plancher tenu'],
+        ['tu as des télévisions ?', 'hors catalogue'],
+        ['je veux 50 robes rouges', 'rupture de stock'],
+        ['tu livres à Calavi ? c’est combien ?', 'frais et délai du profil'],
+        ['donne-moi 2,5 kg de gari', 'quantité fractionnaire'],
+        ['ok je prends, Fidjrossè à Cotonou', 'adresse + zone'],
+      ]
+
+      ESSAIS.forEach(([texte, attendu]) => {
+        const b = document.createElement('button')
+        b.className = 'essai'
+        b.type = 'button'
+        b.innerHTML = `<span>${texte}</span><span class="attendu">${attendu}</span>`
+        b.onclick = () => {
+          saisie.value = texte
+          document.getElementById('formulaire').requestSubmit()
+        }
+        document.getElementById('essais').appendChild(b)
+      })
+
+      /* Miroir léger de l'extracteur du garde-fou, pour montrer dans la bulle
+         quels nombres ont été vérifiés. Le vrai contrôle est côté serveur. */
+      const MOTIF = /\d+(?:[    .,]\d{3})*(?:[.,]\d{1,2})?(?:[kK]\b)?(?!\d)/g
+      function valeur(brut) {
+        const k = /[kK]$/.test(brut)
+        const corps = brut.replace(/[kK]$/, '').replace(/[    ]/g, '')
+        const dec = corps.match(/[.,](\d{1,2})$/)
+        const ent = (dec ? corps.slice(0, -dec[0].length) : corps).replace(/[.,]/g, '')
+        const v = Number(dec ? `${ent}.${dec[1]}` : ent)
+        return k ? v * 1000 : v
+      }
+      const echapper = (s) =>
+        s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c])
+
+      function surligner(texte, autorises, libelles) {
+        let reste = texte
+        for (const l of libelles || []) {
+          reste = reste.split(l).join('\u0000'.repeat(l.length))
+        }
+        let out = ''
+        let curseur = 0
+        for (const m of reste.matchAll(MOTIF)) {
+          const i = m.index
+          out += echapper(texte.slice(curseur, i))
+          const brut = texte.substr(i, m[0].length)
+          const ok = autorises.includes(valeur(m[0]))
+          out += `<span class="chiffre${ok ? '' : ' hors'}">${echapper(brut)}</span>`
+          curseur = i + m[0].length
+        }
+        return out + echapper(texte.slice(curseur))
+      }
+
+      function bulle(classe, html) {
+        const d = document.createElement('div')
+        d.className = 'bulle ' + classe
+        d.innerHTML = html
+        document.getElementById('fil-interieur').appendChild(d)
+        fil.scrollTop = fil.scrollHeight
+        return d
+      }
+
+      const LIBELLE_FAIT = {
+        Greeting: 'Salutation',
+        CatalogueEmpty: 'Catalogue vide',
+        ProductsFound: 'Produits proposés',
+        PriceQuoted: 'Prix annoncé',
+        OutOfScope: 'Hors catalogue',
+        OutOfStock: 'Stock insuffisant',
+        MinQuantity: 'Quantité minimum',
+        NegotiationResult: 'Négociation',
+        CartUpdated: 'Panier',
+        AddressNeeded: 'Adresse manquante',
+        ZoneUnknown: 'Zone inconnue',
+        DeliveryQuoted: 'Livraison',
+        OrderSummary: 'Commande',
+        OrderCancelled: 'Annulation',
+        Unclear: 'Message incompris',
+        OffTopic: 'Hors sujet',
+        QuotaExceeded: 'Quota atteint',
+      }
+      const n = (x) => `<span class="v">${x.toLocaleString('fr-FR')}</span>`
+
+      function raconter(f) {
+        switch (f.kind) {
+          case 'PriceQuoted':
+            return `${f.name} à ${n(f.price)} XOF${f.stock === null ? ', stock illimité' : `, ${n(f.stock)} en stock`}${f.leadTimeDays ? `, ${n(f.leadTimeDays)} jours, acompte ${n(f.depositPercent)} %` : ''}`
+          case 'ProductsFound':
+            return f.products.map((p) => `${p.name} — ${n(p.price)} XOF`).join('<br>')
+          case 'NegotiationResult':
+            return `${f.name} — ${f.accepted ? 'accepté' : 'refusé'} à ${n(f.offer)} XOF${f.final ? ' (dernier mot)' : ''}`
+          case 'OutOfStock':
+            return `${f.name} — il n'en reste que ${n(f.available)}`
+          case 'MinQuantity':
+            return `${f.name} — minimum ${n(f.minQuantity)} ${f.unit}`
+          case 'OutOfScope':
+            return `« ${f.query} » n'est pas au catalogue`
+          case 'CartUpdated':
+            return (
+              f.lines
+                .map((l) => `${n(l.quantity)} × ${l.productId} à ${n(l.agreedPrice)}`)
+                .join('<br>') + `<br>sous-total ${n(f.subtotal)} XOF`
+            )
+          case 'DeliveryQuoted':
+            return `${f.zone} — ${n(f.fee)} XOF, sous ${n(f.delayHours)} h`
+          case 'ZoneUnknown':
+            return `zone non reconnue · connues : ${f.zones.join(', ')}`
+          case 'OrderSummary':
+            return `total ${n(f.order.total)} XOF (dont ${n(f.order.deliveryFee)} de livraison)${f.order.depositAmount ? `, acompte ${n(f.order.depositAmount)}` : ''}`
+          default:
+            return ''
+        }
+      }
+
+      function inscrire(dit, d) {
+        tour += 1
+        const verdict =
+          d.guardrail === 'ok'
+            ? ['ok', 'contrôlé']
+            : d.guardrail === 'regenerated'
+              ? ['repris', 'repris']
+              : ['refuse', 'refusé']
+
+        const faits = d.facts.length
+          ? d.facts
+              .map((f) => {
+                const corps = raconter(f)
+                return `<div class="fait"><b>${LIBELLE_FAIT[f.kind] || f.kind}</b>${corps ? ' · ' + corps : ''}</div>`
+              })
+              .join('')
+          : '<div class="sobre">aucun fait — le modèle n’avait rien à dire</div>'
+
+        const jetons = d.allowedNumbers
+          .map((x) => `<span class="jeton">${x.toLocaleString('fr-FR')}</span>`)
+          .join('')
+        const mots = d.allowedPhrases.map((p) => `<span class="jeton mot">${p}</span>`).join('')
+
+        const el = document.createElement('div')
+        el.className = 'entree'
+        el.innerHTML = `
+          <div class="entree-tete">
+            <span class="num">№${String(tour).padStart(2, '0')}</span>
+            <div class="dit"><div class="txt">« ${echapper(dit)} »</div></div>
+            <span class="tampon ${verdict[0]}">${verdict[1]}</span>
+          </div>
+          <dl class="ligne"><dt>Intention</dt><dd>${d.intent.intent}${d.intent.counterOffer != null ? ` · offre ${d.intent.counterOffer.toLocaleString('fr-FR')}` : ''}</dd></dl>
+          <dl class="ligne"><dt>Faits</dt><dd>${faits}</dd></dl>
+          <dl class="ligne"><dt>Autorisé</dt><dd><div class="jetons">${jetons}${mots}</div></dd></dl>
+          <dl class="ligne"><dt>État</dt><dd>${d.phase}${d.cart.length ? ` · ${d.cart.length} ligne(s) au panier` : ''}${d.events.length ? ` · ${d.events.join(', ')}` : ''}</dd></dl>
+          <details class="brut"><summary>Données brutes</summary><pre>${echapper(JSON.stringify({ intent: d.intent, facts: d.facts, cart: d.cart, events: d.events }, null, 2))}</pre></details>
+        `
+        entrees.prepend(el)
+      }
+
+      fetch('/catalogue')
+        .then((r) => r.json())
+        .then((c) => {
+          const lignes = []
+          for (const p of c.products) {
+            if (p.pricing.kind === 'unit') {
+              for (const v of p.pricing.variants) {
+                lignes.push([
+                  `${p.name} ${v.label}`,
+                  v.stock === null ? 'stock illimité' : `${v.stock} en stock`,
+                  `${v.price.toLocaleString('fr-FR')} <small>XOF</small>`,
+                ])
+              }
+            } else if (p.pricing.kind === 'bulk') {
+              lignes.push([
+                p.name,
+                `min ${p.pricing.minQuantity} ${p.pricing.unitOfMeasure} · ${p.pricing.stockQuantity} en stock`,
+                `${p.pricing.pricePerUnit.toLocaleString('fr-FR')} <small>XOF/${p.pricing.unitOfMeasure}</small>`,
+              ])
+            } else {
+              lignes.push([
+                p.name,
+                `${p.pricing.leadTimeDays} jours · acompte ${p.pricing.depositPercent} %`,
+                `${p.pricing.basePrice.toLocaleString('fr-FR')} <small>XOF</small>`,
+              ])
+            }
+          }
+          document.getElementById('catalogue').innerHTML = lignes
+            .map(
+              ([nom, det, prix]) =>
+                `<div class="article"><div><div class="nom">${nom}</div><div class="det">${det}</div></div><div class="prix">${prix}</div></div>`,
+            )
+            .join('')
+          document.getElementById('sous-titre').textContent =
+            `Cotonou · ${lignes.length} références au catalogue`
+        })
+
+      document.getElementById('reinit').onclick = async () => {
+        await fetch('/reset', { method: 'POST' })
+        location.reload()
+      }
+
+      document.getElementById('formulaire').onsubmit = async (e) => {
+        e.preventDefault()
+        const texte = saisie.value.trim()
+        if (!texte) return
+        protocole.remove?.()
+        document.getElementById('source')?.removeAttribute('open')
+        bulle('moi', echapper(texte))
+        saisie.value = ''
+        saisie.placeholder = 'Ta réponse…'
+        envoyer.disabled = true
+
+        const attente = bulle(
+          'lui',
+          '<span class="attente"><i></i><i></i><i></i></span> <span class="compteur">0,0 s</span>',
+        )
+        const t0 = Date.now()
+        const tic = setInterval(() => {
+          const c = attente.querySelector('.compteur')
+          if (c) c.textContent = ((Date.now() - t0) / 1000).toFixed(1).replace('.', ',') + ' s'
+        }, 100)
+
+        try {
+          const r = await fetch('/chat', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ sessionId, text: texte }),
+          })
+          const d = await r.json()
+          clearInterval(tic)
+          if (d.error) {
+            attente.className = 'bulle lui'
+            attente.innerHTML = `<div class="alerte">Le modèle n'a pas répondu. Vérifie qu'Ollama tourne.<br><small>${echapper(d.error)}</small></div>`
+            return
+          }
+          attente.innerHTML =
+            surligner(d.reply, d.allowedNumbers, d.allowedPhrases) +
+            `<div class="pied">${d.intent.intent} · ${(d.ms / 1000).toFixed(1).replace('.', ',')} s</div>`
+          fil.scrollTop = fil.scrollHeight
+          inscrire(texte, d)
+        } catch (err) {
+          clearInterval(tic)
+          attente.innerHTML = `<div class="alerte">${echapper(String(err))}</div>`
+        } finally {
+          envoyer.disabled = false
+          saisie.focus()
+        }
+      }
+      saisie.focus()
+    </script>
+  </body>
+</html>

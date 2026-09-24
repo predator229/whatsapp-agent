@@ -1,0 +1,12 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`exportProfile > matches snapshot 1`] = `
+"productId,name,kind,variantId,label,price,unitOfMeasure,stock,leadTimeDays,depositPercent,active
+robe-rouge,Robe rouge,unit,m,Taille M,12000,,3,,,true
+robe-rouge,Robe rouge,unit,l,Taille L,12000,,0,,,true
+chaussure-noire,Chaussure noire,unit,40,Pointure 40,8000,,,,,true
+gari,Gari,bulk,,,600,kg,40,,,true
+tenue-mesure,Tenue sur mesure,madeToOrder,,,25000,,,7,50,true
+ancien-sac,Sac ancien modèle,unit,u,Unique,5000,,0,,,false
+"
+`;
