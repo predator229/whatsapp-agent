@@ -3,9 +3,9 @@ import {
   CartLineSchema,
   OrderLineSchema,
   newConversationState,
-  pilotProfile,
   type ConversationState,
 } from '@wa/domain'
+import { pilotProfile } from '@wa/domain/testing'
 import { transition } from './state-machine'
 import { IntentSchema, type Intent } from './intent-schema'
 import { MAX_LINE_QUANTITY, isSaneQuantity, isWholeSteps } from './quantity'

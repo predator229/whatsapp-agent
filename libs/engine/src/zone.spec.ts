@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { pilotProfile, type MerchantProfile } from '@wa/domain'
+import { type MerchantProfile } from '@wa/domain'
+import { pilotProfile } from '@wa/domain/testing'
 import { findZone } from './handlers/shared'
 
 const withZones = (names: string[]): MerchantProfile => ({

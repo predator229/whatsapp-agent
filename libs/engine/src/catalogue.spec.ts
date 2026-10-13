@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { pilotProfile } from '@wa/domain'
+import { pilotProfile } from '@wa/domain/testing'
 import { activeProducts, resolveProductRef } from './catalogue'
 
 describe('activeProducts', () => {

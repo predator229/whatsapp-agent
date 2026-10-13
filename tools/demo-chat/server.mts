@@ -18,25 +18,22 @@ import {
   newConversationState,
   quotaStatus,
   type ReplyCounter,
-  pilotProfile,
   type ConversationState,
   type MerchantProfile,
-} from '../../libs/domain/src/index'
+} from '@wa/domain'
+import { pilotProfile } from '@wa/domain/testing'
+import { OpenAiCompatibleProvider, LlmUnavailableError, type LlmMessage } from '@wa/llm-provider'
 import {
-  OpenAiCompatibleProvider,
-  LlmUnavailableError,
-  type LlmMessage,
-} from '../../libs/llm-provider/src/index'
-import { transition } from '../../libs/engine/src/state-machine'
-import { activeProducts } from '../../libs/engine/src/catalogue'
-import { checkReply, truncateToSentence } from '../../libs/engine/src/guardrail'
-import {
+  activeProducts,
+  checkReply,
   IntentSchema,
   INTENT_JSON_SCHEMA,
+  transition,
+  truncateToSentence,
   UNCLEAR_INTENT,
-} from '../../libs/engine/src/intent-schema'
-import type { Intent } from '../../libs/engine/src/intent-schema'
-import type { TurnFact } from '../../libs/engine/src/facts'
+  type Intent,
+  type TurnFact,
+} from '@wa/engine'
 
 const PORT = Number(process.env['PORT'] ?? 5173)
 /** Démo locale : n'écoute que la boucle locale, jamais le Wi-Fi partagé. */

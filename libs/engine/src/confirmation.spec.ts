@@ -3,9 +3,9 @@ import {
   ConversationStateSchema,
   expireConversation,
   newConversationState,
-  pilotProfile,
   type ConversationState,
 } from '@wa/domain'
+import { pilotProfile } from '@wa/domain/testing'
 import { transition } from './state-machine'
 import type { Intent } from './intent-schema'
 
