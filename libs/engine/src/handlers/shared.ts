@@ -73,9 +73,21 @@ export function zoneCandidate(intent: Intent): string | undefined {
   return intent.zone ?? intent.address
 }
 
-/** Prix en vigueur : l'offre déjà négociée l'emporte sur le prix affiché. */
-export function currentPrice(state: ConversationState, resolved: ResolvedProduct): number {
-  return state.negotiation[resolved.product.productId]?.currentOffer ?? resolved.unitPrice
+/**
+ * Prix en vigueur : l'offre déjà négociée l'emporte sur le prix affiché, mais seulement
+ * pour au moins la quantité négociée — une remise « 3 pièces » ne vaut pas pour 1 pièce.
+ * Sans `quantity`, c'est l'offre telle quelle (requote).
+ */
+export function currentPrice(
+  state: ConversationState,
+  resolved: ResolvedProduct,
+  quantity?: number,
+): number {
+  const deal = state.negotiation[resolved.product.productId]
+  if (!deal) return resolved.unitPrice
+  return quantity !== undefined && quantity < (deal.quantity ?? 1)
+    ? resolved.unitPrice
+    : deal.currentOffer
 }
 
 /**

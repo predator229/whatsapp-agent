@@ -38,7 +38,14 @@ export const ConversationStateSchema = z.object({
   phase: ConversationPhaseSchema,
   turns: z.array(ConversationTurnSchema).max(MAX_TURNS),
   cart: z.array(CartLineSchema),
-  negotiation: z.record(z.object({ round: z.number().int().nonnegative(), currentOffer: price })),
+  negotiation: z.record(
+    z.object({
+      round: z.number().int().nonnegative(),
+      currentOffer: price,
+      /** Quantité pour laquelle l'offre a été faite (absente = 1) : en deçà, prix affiché. */
+      quantity: z.number().positive().finite().optional(),
+    }),
+  ),
   address: z.object({ text: z.string().min(1), zone: z.string().min(1).optional() }).optional(),
   /** Dernière commande émise : une nouvelle confirmation la rappelle sans la réémettre. */
   confirmedOrder: OrderSchema.optional(),

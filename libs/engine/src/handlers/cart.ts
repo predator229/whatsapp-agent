@@ -1,4 +1,4 @@
-import type { CartLine, MerchantProfile } from '@wa/domain'
+import type { CartLine } from '@wa/domain'
 import { resolveProductRef, type ResolvedProduct } from '../catalogue'
 import type { ProductRef } from '../intent-schema'
 import type { TurnFact } from '../facts'
@@ -68,7 +68,7 @@ function addRef(ctx: Ctx, draft: Draft, ref: ProductRef): Draft {
     ...(resolved.variantId ? { variantId: resolved.variantId } : {}),
     quantity,
     unitPrice: resolved.unitPrice,
-    agreedPrice: currentPrice(draft.state, resolved),
+    agreedPrice: currentPrice(draft.state, resolved, quantity),
   }
   const cart = existing
     ? draft.state.cart.map((l) => (sameLine(l, resolved) ? line : l))
@@ -110,27 +110,27 @@ function matches(line: CartLine, key: LineKey): boolean {
 }
 
 /** Une quantité retirée invalide (0,5 robe) laisse la ligne intacte plutôt que d'y laisser une fraction. */
-function removeRef(
-  cart: readonly CartLine[],
-  profile: MerchantProfile,
-  ref: ProductRef,
-): CartLine[] {
-  const resolved = resolveProductRef(profile, ref)
+function removeRef(cart: readonly CartLine[], ctx: Ctx, ref: ProductRef): CartLine[] {
+  const resolved = resolveProductRef(ctx.profile, ref)
   const key = keyOf(resolved, ref)
   const removed = ref.quantity
   if (removed === undefined) return cart.filter((line) => !matches(line, key))
   if (resolved && !isWholeSteps(resolved.product, removed)) return [...cart]
+  // Repasser sous la quantité négociée fait perdre la remise : retour au prix affiché.
+  const dealQuantity = ctx.state.negotiation[key.productId]?.quantity ?? 1
   return cart.flatMap((line) => {
     if (!matches(line, key)) return [line]
     const quantity = line.quantity - removed
-    return quantity > 0 ? [{ ...line, quantity }] : []
+    if (quantity <= 0) return []
+    const agreedPrice = quantity < dealQuantity ? line.unitPrice : line.agreedPrice
+    return [{ ...line, quantity, agreedPrice }]
   })
 }
 
 /** Sans quantité on retire la ligne entière ; sans référence du tout on vide le panier. */
 export function handleRemoveFromCart(ctx: Ctx): Draft {
   const cart = ctx.intent.productRefs.reduce<CartLine[]>(
-    (lines, ref) => removeRef(lines, ctx.profile, ref),
+    (lines, ref) => removeRef(lines, ctx, ref),
     ctx.intent.productRefs.length === 0 ? [] : [...ctx.state.cart],
   )
   return {
