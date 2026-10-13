@@ -40,13 +40,25 @@ function normalize(value: string): string {
     .trim()
 }
 
+/**
+ * Zone desservie désignée par le texte. Un nom exact l'emporte ; sinon on cherche les
+ * zones citées dans le texte libre, en écartant celles dont le nom est inclus dans une
+ * autre citée (« Calavi » dans « Abomey-Calavi »). Plusieurs zones distinctes citées
+ * (« Porto-Novo, en venant de Cotonou ») = ambigu : `undefined`, la zone sera redemandée
+ * plutôt que de facturer le tarif le plus bas.
+ */
 export function findZone(
   profile: MerchantProfile,
   candidate: string | undefined,
 ): DeliveryZone | undefined {
   if (!candidate) return undefined
   const needle = normalize(candidate)
-  return profile.delivery.zones.find((z) => needle.includes(normalize(z.name)))
+  const zones = profile.delivery.zones.map((zone) => ({ zone, name: normalize(zone.name) }))
+  const exact = zones.find((z) => z.name === needle)
+  if (exact) return exact.zone
+  const cited = zones.filter((z) => needle.includes(z.name))
+  const distinct = cited.filter((z) => !cited.some((o) => o !== z && o.name.includes(z.name)))
+  return distinct.length === 1 ? distinct[0]?.zone : undefined
 }
 
 /** `DeliveryQuoted` si la zone est connue du profil, sinon la liste des zones desservies. */
