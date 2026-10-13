@@ -12,6 +12,7 @@ import { createServer } from 'node:http'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import {
+  appendTurn,
   newConversationState,
   pilotProfile,
   type ConversationState,
@@ -203,10 +204,7 @@ async function handleTurn(sessionId: string, text: string): Promise<TurnResult> 
     }
   }
 
-  sessions.set(sessionId, {
-    ...turn.state,
-    turns: [...turn.state.turns, { role: 'bot', text: reply, at: receivedAt }].slice(-12),
-  })
+  sessions.set(sessionId, appendTurn(turn.state, { role: 'bot', text: reply, at: receivedAt }))
 
   return {
     reply,
