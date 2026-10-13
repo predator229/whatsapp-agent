@@ -115,3 +115,22 @@ export function incrementCounter(counter: ReplyCounter, at: string): ReplyCounte
     ? { ...counter, replies: counter.replies + 1 }
     : { merchantId: counter.merchantId, period, replies: 1 }
 }
+
+/** Part du plafond mensuel à partir de laquelle le commerçant doit être alerté. */
+export const QUOTA_WARNING_RATIO = 0.8
+
+export type QuotaStatus = 'ok' | 'warning' | 'exceeded'
+
+/**
+ * À consulter AVANT tout appel LLM : `exceeded` = plus aucune réponse générée ce mois-ci,
+ * `warning` = alerte à 80 %. Un compteur d'une période révolue vaut zéro.
+ */
+export function quotaStatus(
+  counter: ReplyCounter,
+  maxRepliesPerMonth: number,
+  at: string,
+): QuotaStatus {
+  const used = counter.period === periodOf(at) ? counter.replies : 0
+  if (used >= maxRepliesPerMonth) return 'exceeded'
+  return used >= maxRepliesPerMonth * QUOTA_WARNING_RATIO ? 'warning' : 'ok'
+}
