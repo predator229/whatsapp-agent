@@ -46,6 +46,17 @@ describe('OrderSchema', () => {
   it('accepts a deposit for a made-to-order line', () => {
     expect(OrderSchema.parse({ ...order, depositAmount: 5000 }).depositAmount).toBe(5000)
   })
+
+  it('rejects a deposit larger than the total', () => {
+    const result = OrderSchema.safeParse({ ...order, depositAmount: 21001 })
+    expect(result.success).toBe(false)
+    expect(result.error?.issues[0]?.path).toEqual(['depositAmount'])
+  })
+
+  it('rejects an infinite line quantity', () => {
+    const lines = [{ ...line, quantity: Infinity }]
+    expect(OrderSchema.safeParse({ ...order, lines }).success).toBe(false)
+  })
 })
 
 describe('orderTotal', () => {
