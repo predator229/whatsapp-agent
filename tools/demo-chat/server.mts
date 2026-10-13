@@ -44,6 +44,12 @@ const HOST = '127.0.0.1'
 const MAX_BODY_BYTES = 16 * 1024
 const MAX_SESSIONS = 200
 const MAX_TEXT_CHARS = 1000
+/**
+ * Promesses verbales que la liste blanche numérique ne voit pas. Liste de démo : la
+ * version produit relève de la politique du commerçant (ex. « gratuit » légitime pour
+ * une zone à 0 XOF).
+ */
+const FORBIDDEN_PROMISES = ['gratuit', 'gratuite', 'gratuits', 'offert', 'offerte', 'cadeau']
 const provider = new OpenAiCompatibleProvider({
   baseUrl: process.env['LLM_BASE_URL'] ?? 'http://localhost:11434',
   model: process.env['LLM_MODEL'] ?? 'qwen2.5:14b-instruct-q4_K_M',
@@ -195,14 +201,14 @@ async function compose(
   facts: TurnFact[],
   allowed: number[],
   state: ConversationState,
-  correction?: { draft: string; offending: readonly number[] },
+  correction?: { draft: string; offending: readonly number[]; forbidden: readonly string[] },
 ): Promise<string> {
   const retry: LlmMessage[] = correction
     ? [
         { role: 'assistant', content: correction.draft },
         {
           role: 'user',
-          content: `[contrôle automatique] Nombres interdits : ${correction.offending.join(', ')}. Réécris ta réponse en ne citant que les nombres autorisés.`,
+          content: `[contrôle automatique] Nombres interdits : ${correction.offending.join(', ') || 'aucun'}. Termes interdits : ${correction.forbidden.join(', ') || 'aucun'}. Réécris ta réponse sans eux, en ne citant que les nombres autorisés.`,
         },
       ]
     : []
@@ -285,6 +291,7 @@ async function handleTurn(sessionId: string, text: string): Promise<TurnResult> 
       text: draft,
       allowedNumbers: turn.allowedNumbers,
       allowedPhrases: turn.allowedPhrases,
+      forbiddenPhrases: FORBIDDEN_PROMISES,
       maxReplyChars: profile.limits.maxReplyChars,
     })
 
@@ -299,6 +306,7 @@ async function handleTurn(sessionId: string, text: string): Promise<TurnResult> 
     const second = await compose(turn.facts, turn.allowedNumbers, turn.state, {
       draft: first,
       offending: firstCheck.offending,
+      forbidden: firstCheck.forbidden ?? [],
     })
     const secondCheck = guard(second)
     if (secondCheck.ok) {
