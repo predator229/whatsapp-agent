@@ -74,8 +74,16 @@ function lineDefect(profile: MerchantProfile, line: CartLine): TurnFact | null {
       }
 }
 
+/**
+ * Idempotente : une fois la commande émise, « je confirme » (ou le même message livré
+ * deux fois) rappelle le récapitulatif sans réémettre `OrderConfirmed`. Le panier et la
+ * négociation sont vidés : le prochain ajout ouvre une nouvelle commande.
+ */
 export function handleConfirmOrder(ctx: Ctx): Draft {
   const { state, profile, receivedAt } = ctx
+  if (state.phase === 'confirmed' && state.confirmedOrder) {
+    return { state, facts: [{ kind: 'OrderSummary', order: state.confirmedOrder }], events: [] }
+  }
   if (state.cart.length === 0) {
     return { state: { ...state, phase: 'browsing' }, facts: [{ kind: 'Unclear' }], events: [] }
   }
@@ -108,7 +116,7 @@ export function handleConfirmOrder(ctx: Ctx): Draft {
     createdAt: receivedAt,
   }
   return {
-    state: { ...state, phase: 'confirmed' },
+    state: { ...state, phase: 'confirmed', cart: [], negotiation: {}, confirmedOrder: order },
     facts: [{ kind: 'OrderSummary', order }],
     events: [{ type: 'OrderConfirmed', at: receivedAt, order }],
   }

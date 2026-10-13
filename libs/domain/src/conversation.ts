@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { OrderSchema } from './order'
 
 export const MAX_TURNS = 12
 export const STATE_EXPIRY_HOURS = 72
@@ -39,6 +40,8 @@ export const ConversationStateSchema = z.object({
   cart: z.array(CartLineSchema),
   negotiation: z.record(z.object({ round: z.number().int().nonnegative(), currentOffer: price })),
   address: z.object({ text: z.string().min(1), zone: z.string().min(1).optional() }).optional(),
+  /** Dernière commande émise : une nouvelle confirmation la rappelle sans la réémettre. */
+  confirmedOrder: OrderSchema.optional(),
   lastActivityAt: isoDateTime,
 })
 
@@ -82,7 +85,15 @@ export function expireConversation(state: ConversationState, now: string): Conve
   const idleHours = hoursBetween(state.lastActivityAt, now)
   if (idleHours <= STATE_EXPIRY_HOURS) return state
   const cart = idleHours > CART_RETENTION_DAYS * 24 ? [] : state.cart
-  return { ...state, phase: 'idle', turns: [], negotiation: {}, address: undefined, cart }
+  return {
+    ...state,
+    phase: 'idle',
+    turns: [],
+    negotiation: {},
+    address: undefined,
+    confirmedOrder: undefined,
+    cart,
+  }
 }
 
 export const ReplyCounterSchema = z.object({
