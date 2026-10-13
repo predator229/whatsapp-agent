@@ -114,8 +114,9 @@ function removeRef(cart: readonly CartLine[], ctx: Ctx, ref: ProductRef): CartLi
   const resolved = resolveProductRef(ctx.profile, ref)
   const key = keyOf(resolved, ref)
   const removed = ref.quantity
-  if (removed === undefined) return cart.filter((line) => !matches(line, key))
-  if (resolved && !isWholeSteps(resolved.product, removed)) return [...cart]
+  // Produit sorti du catalogue : son pas est inconnu, on ne retire que la ligne entière.
+  if (removed === undefined || !resolved) return cart.filter((line) => !matches(line, key))
+  if (!isWholeSteps(resolved.product, removed)) return [...cart]
   // Repasser sous la quantité négociée fait perdre la remise : retour au prix affiché.
   const dealQuantity = ctx.state.negotiation[key.productId]?.quantity ?? 1
   return cart.flatMap((line) => {

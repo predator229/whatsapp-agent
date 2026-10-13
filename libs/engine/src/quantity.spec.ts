@@ -125,6 +125,32 @@ describe('remove_from_cart — quantities by product kind', () => {
   })
 })
 
+describe('remove_from_cart — product that left the catalogue', () => {
+  it('removes the whole line rather than leaving half a bag', () => {
+    const stale: ConversationState = {
+      ...idle,
+      phase: 'cart',
+      cart: [
+        {
+          productId: 'ancien-sac',
+          variantId: 'u',
+          quantity: 1,
+          unitPrice: 5000,
+          agreedPrice: 5000,
+        },
+      ],
+    }
+    const result = run(
+      {
+        intent: 'remove_from_cart',
+        productRefs: [{ productId: 'ancien-sac', variantId: 'u', quantity: 0.5 }],
+      },
+      stale,
+    )
+    expect(result.state.cart).toEqual([])
+  })
+})
+
 describe('confirm_order — quantity backstop on a persisted cart', () => {
   const addressed = (cart: ConversationState['cart']): ConversationState => ({
     ...idle,
