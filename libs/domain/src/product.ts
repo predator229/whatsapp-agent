@@ -16,9 +16,9 @@ const BulkPricing = z.object({
   kind: z.literal('bulk'),
   unitOfMeasure: z.enum(['kg', 'm', 'L', 'piece']),
   pricePerUnit: price,
-  minQuantity: z.number().positive(),
-  stepQuantity: z.number().positive(),
-  stockQuantity: z.number().nonnegative().nullable(),
+  minQuantity: z.number().positive().finite(),
+  stepQuantity: z.number().positive().finite(),
+  stockQuantity: z.number().nonnegative().finite().nullable(),
 })
 const MadeToOrderPricing = z.object({
   kind: z.literal('madeToOrder'),

@@ -26,7 +26,7 @@ export const ConversationTurnSchema = z.object({
 export const CartLineSchema = z.object({
   productId: z.string().min(1),
   variantId: z.string().min(1).optional(),
-  quantity: z.number().positive(),
+  quantity: z.number().positive().finite(),
   unitPrice: price,
   agreedPrice: price,
 })
