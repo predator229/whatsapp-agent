@@ -25,6 +25,25 @@ describe('exportProfile', () => {
     }
     expect(exportProfile(profile).catalogueCsv).toContain('"Robe\rrouge"')
   })
+  it.each(['=HYPERLINK("http://x","clic")', '+1+1', '-2+3', '@SUM(A1)', '\tcmd'])(
+    'neutralises a product name that starts like a formula: %s',
+    (name) => {
+      const profile = {
+        ...pilotProfile,
+        catalogue: [{ ...pilotProfile.catalogue[0]!, name }],
+      }
+      const row = exportProfile(profile).catalogueCsv.split('\n')[1]!
+      const nameCell = row.split(',')[1]!
+      expect(nameCell.replace(/^"/, '').startsWith("'")).toBe(true)
+    },
+  )
+  it('neutralises a formula even when the cell also needs quoting', () => {
+    const profile = {
+      ...pilotProfile,
+      catalogue: [{ ...pilotProfile.catalogue[0]!, name: '=HYPERLINK("u")' }],
+    }
+    expect(exportProfile(profile).catalogueCsv).toContain(`"'=HYPERLINK(""u"")"`)
+  })
   it('profileJson round-trips', () => {
     expect(JSON.parse(out.profileJson)).toEqual(pilotProfile)
   })
