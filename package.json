@@ -1,7 +1,7 @@
 {
   "name": "whatsapp-agent",
   "version": "1.0.0",
-  "description": "Static coming-soon page served at https://agent.cybersds.fr",
+  "description": "WhatsApp sales agent for merchants: Nx libs (domain, engine, llm-provider) and the static landing at https://agent.cybersds.fr",
   "directories": {
     "doc": "docs"
   },
