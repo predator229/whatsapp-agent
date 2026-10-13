@@ -672,8 +672,12 @@
         const v = Number(dec ? `${ent}.${dec[1]}` : ent)
         return k ? v * 1000 : v
       }
+      // Tout ce qui vient du serveur (noms, requêtes dérivées du texte client) passe par ici avant innerHTML.
       const echapper = (s) =>
-        s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c])
+        String(s).replace(
+          /[&<>"']/g,
+          (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+        )
 
       function surligner(texte, autorises, libelles) {
         let reste = texte
@@ -710,6 +714,7 @@
         OutOfScope: 'Hors catalogue',
         OutOfStock: 'Stock insuffisant',
         MinQuantity: 'Quantité minimum',
+        QuantityInvalid: 'Quantité refusée',
         NegotiationResult: 'Négociation',
         CartUpdated: 'Panier',
         AddressNeeded: 'Adresse manquante',
@@ -726,27 +731,29 @@
       function raconter(f) {
         switch (f.kind) {
           case 'PriceQuoted':
-            return `${f.name} à ${n(f.price)} XOF${f.stock === null ? ', stock illimité' : `, ${n(f.stock)} en stock`}${f.leadTimeDays ? `, ${n(f.leadTimeDays)} jours, acompte ${n(f.depositPercent)} %` : ''}`
+            return `${echapper(f.name)} à ${n(f.price)} XOF${f.stock === null ? ', stock illimité' : `, ${n(f.stock)} en stock`}${f.leadTimeDays ? `, ${n(f.leadTimeDays)} jours, acompte ${n(f.depositPercent)} %` : ''}`
           case 'ProductsFound':
-            return f.products.map((p) => `${p.name} — ${n(p.price)} XOF`).join('<br>')
+            return f.products.map((p) => `${echapper(p.name)} — ${n(p.price)} XOF`).join('<br>')
           case 'NegotiationResult':
-            return `${f.name} — ${f.accepted ? 'accepté' : 'refusé'} à ${n(f.offer)} XOF${f.final ? ' (dernier mot)' : ''}`
+            return `${echapper(f.name)} — ${f.accepted ? 'accepté' : 'refusé'} à ${n(f.offer)} XOF${f.final ? ' (dernier mot)' : ''}`
           case 'OutOfStock':
-            return `${f.name} — il n'en reste que ${n(f.available)}`
+            return `${echapper(f.name)} — il n'en reste que ${n(f.available)}`
           case 'MinQuantity':
-            return `${f.name} — minimum ${n(f.minQuantity)} ${f.unit}`
+            return `${echapper(f.name)} — minimum ${n(f.minQuantity)} ${echapper(f.unit)}`
+          case 'QuantityInvalid':
+            return `${echapper(f.name)} — par multiple de ${n(f.step)}, ${n(f.max)} maximum`
           case 'OutOfScope':
-            return `« ${f.query} » n'est pas au catalogue`
+            return `« ${echapper(f.query)} » n'est pas au catalogue`
           case 'CartUpdated':
             return (
               f.lines
-                .map((l) => `${n(l.quantity)} × ${l.productId} à ${n(l.agreedPrice)}`)
+                .map((l) => `${n(l.quantity)} × ${echapper(l.productId)} à ${n(l.agreedPrice)}`)
                 .join('<br>') + `<br>sous-total ${n(f.subtotal)} XOF`
             )
           case 'DeliveryQuoted':
-            return `${f.zone} — ${n(f.fee)} XOF, sous ${n(f.delayHours)} h`
+            return `${echapper(f.zone)} — ${n(f.fee)} XOF, sous ${n(f.delayHours)} h`
           case 'ZoneUnknown':
-            return `zone non reconnue · connues : ${f.zones.join(', ')}`
+            return `zone non reconnue · connues : ${echapper(f.zones.join(', '))}`
           case 'OrderSummary':
             return `total ${n(f.order.total)} XOF (dont ${n(f.order.deliveryFee)} de livraison)${f.order.depositAmount ? `, acompte ${n(f.order.depositAmount)}` : ''}`
           default:
@@ -767,7 +774,7 @@
           ? d.facts
               .map((f) => {
                 const corps = raconter(f)
-                return `<div class="fait"><b>${LIBELLE_FAIT[f.kind] || f.kind}</b>${corps ? ' · ' + corps : ''}</div>`
+                return `<div class="fait"><b>${echapper(LIBELLE_FAIT[f.kind] || f.kind)}</b>${corps ? ' · ' + corps : ''}</div>`
               })
               .join('')
           : '<div class="sobre">aucun fait — le modèle n’avait rien à dire</div>'
@@ -775,7 +782,9 @@
         const jetons = d.allowedNumbers
           .map((x) => `<span class="jeton">${x.toLocaleString('fr-FR')}</span>`)
           .join('')
-        const mots = d.allowedPhrases.map((p) => `<span class="jeton mot">${p}</span>`).join('')
+        const mots = d.allowedPhrases
+          .map((p) => `<span class="jeton mot">${echapper(p)}</span>`)
+          .join('')
 
         const el = document.createElement('div')
         el.className = 'entree'
@@ -785,10 +794,10 @@
             <div class="dit"><div class="txt">« ${echapper(dit)} »</div></div>
             <span class="tampon ${verdict[0]}">${verdict[1]}</span>
           </div>
-          <dl class="ligne"><dt>Intention</dt><dd>${d.intent.intent}${d.intent.counterOffer != null ? ` · offre ${d.intent.counterOffer.toLocaleString('fr-FR')}` : ''}</dd></dl>
+          <dl class="ligne"><dt>Intention</dt><dd>${echapper(d.intent.intent)}${d.intent.counterOffer != null ? ` · offre ${d.intent.counterOffer.toLocaleString('fr-FR')}` : ''}</dd></dl>
           <dl class="ligne"><dt>Faits</dt><dd>${faits}</dd></dl>
           <dl class="ligne"><dt>Autorisé</dt><dd><div class="jetons">${jetons}${mots}</div></dd></dl>
-          <dl class="ligne"><dt>État</dt><dd>${d.phase}${d.cart.length ? ` · ${d.cart.length} ligne(s) au panier` : ''}${d.events.length ? ` · ${d.events.join(', ')}` : ''}</dd></dl>
+          <dl class="ligne"><dt>État</dt><dd>${echapper(d.phase)}${d.cart.length ? ` · ${d.cart.length} ligne(s) au panier` : ''}${d.events.length ? ` · ${echapper(d.events.join(', '))}` : ''}</dd></dl>
           <details class="brut"><summary>Données brutes</summary><pre>${echapper(JSON.stringify({ intent: d.intent, facts: d.facts, cart: d.cart, events: d.events }, null, 2))}</pre></details>
         `
         entrees.prepend(el)
@@ -802,20 +811,20 @@
             if (p.pricing.kind === 'unit') {
               for (const v of p.pricing.variants) {
                 lignes.push([
-                  `${p.name} ${v.label}`,
+                  echapper(`${p.name} ${v.label}`),
                   v.stock === null ? 'stock illimité' : `${v.stock} en stock`,
                   `${v.price.toLocaleString('fr-FR')} <small>XOF</small>`,
                 ])
               }
             } else if (p.pricing.kind === 'bulk') {
               lignes.push([
-                p.name,
-                `min ${p.pricing.minQuantity} ${p.pricing.unitOfMeasure} · ${p.pricing.stockQuantity} en stock`,
+                echapper(p.name),
+                `min ${p.pricing.minQuantity} ${echapper(p.pricing.unitOfMeasure)} · ${p.pricing.stockQuantity} en stock`,
                 `${p.pricing.pricePerUnit.toLocaleString('fr-FR')} <small>XOF/${p.pricing.unitOfMeasure}</small>`,
               ])
             } else {
               lignes.push([
-                p.name,
+                echapper(p.name),
                 `${p.pricing.leadTimeDays} jours · acompte ${p.pricing.depositPercent} %`,
                 `${p.pricing.basePrice.toLocaleString('fr-FR')} <small>XOF</small>`,
               ])
