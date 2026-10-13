@@ -101,6 +101,7 @@ function intentPrompt(p: MerchantProfile): string {
     '- negotiate : le client propose un prix. Mets le montant proposé dans counterOffer.',
     '- add_to_cart : le client veut acheter. Mets la quantité dans productRefs[].quantity.',
     '- give_address : le client donne son adresse. Mets-la dans address.',
+    "- zone : si le client désigne la zone où livrer, mets son nom exact (liste ci-dessus) dans zone ; s'il en cite plusieurs, celle où livrer seulement.",
     '- remove_from_cart : le client retire un article du panier.',
     '- confirm_order : le client valide sa commande.',
     '- cancel : le client renonce à tout.',
