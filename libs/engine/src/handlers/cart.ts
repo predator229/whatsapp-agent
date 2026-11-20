@@ -1,7 +1,8 @@
-import type { CartLine, MerchantProfile } from '@wa/domain'
+import type { CartLine } from '@wa/domain'
 import { resolveProductRef, type ResolvedProduct } from '../catalogue'
 import type { ProductRef } from '../intent-schema'
 import type { TurnFact } from '../facts'
+import { MAX_LINE_QUANTITY, isWholeSteps, quantityStep } from '../quantity'
 import {
   cartFact,
   currentPrice,
@@ -12,9 +13,23 @@ import {
   type Draft,
 } from './shared'
 
-/** Le fait qui bloque l'ajout, ou `null` si la quantité cumulée est servable. */
-function blockingFact(resolved: ResolvedProduct, quantity: number): TurnFact | null {
+function quantityInvalidFact(resolved: ResolvedProduct): TurnFact {
+  return {
+    kind: 'QuantityInvalid',
+    productId: resolved.product.productId,
+    name: resolved.label,
+    step: quantityStep(resolved.product),
+    max: MAX_LINE_QUANTITY,
+  }
+}
+
+/**
+ * Le fait qui bloque l'ajout, ou `null` si la quantité cumulée est servable. Rejoué à la
+ * confirmation : une ligne qui n'aurait pas dû entrer au panier ne devient jamais commande.
+ */
+export function blockingFact(resolved: ResolvedProduct, quantity: number): TurnFact | null {
   const { pricing } = resolved.product
+  if (!isWholeSteps(resolved.product, quantity)) return quantityInvalidFact(resolved)
   if (pricing.kind === 'bulk' && quantity < pricing.minQuantity) {
     return {
       kind: 'MinQuantity',
@@ -32,7 +47,7 @@ function blockingFact(resolved: ResolvedProduct, quantity: number): TurnFact | n
       available: resolved.stock,
     }
   }
-  return null
+  return quantity > MAX_LINE_QUANTITY ? quantityInvalidFact(resolved) : null
 }
 
 function addRef(ctx: Ctx, draft: Draft, ref: ProductRef): Draft {
@@ -40,8 +55,12 @@ function addRef(ctx: Ctx, draft: Draft, ref: ProductRef): Draft {
   if (!resolved) return withFact(draft, { kind: 'OutOfScope', query: ref.productId })
 
   const existing = draft.state.cart.find((l) => sameLine(l, resolved))
-  const quantity = (existing?.quantity ?? 0) + (ref.quantity ?? 1)
-  const blocked = blockingFact(resolved, quantity)
+  const requested = ref.quantity ?? 1
+  const quantity = (existing?.quantity ?? 0) + requested
+  // La demande elle-même doit être vendable : 0,5 robe ajoutée à 1,5 robe ne « répare » rien.
+  const blocked = isWholeSteps(resolved.product, requested)
+    ? blockingFact(resolved, quantity)
+    : quantityInvalidFact(resolved)
   if (blocked) return withFact(draft, blocked)
 
   const line: CartLine = {
@@ -49,7 +68,7 @@ function addRef(ctx: Ctx, draft: Draft, ref: ProductRef): Draft {
     ...(resolved.variantId ? { variantId: resolved.variantId } : {}),
     quantity,
     unitPrice: resolved.unitPrice,
-    agreedPrice: currentPrice(draft.state, resolved),
+    agreedPrice: currentPrice(draft.state, resolved, quantity),
   }
   const cart = existing
     ? draft.state.cart.map((l) => (sameLine(l, resolved) ? line : l))
@@ -80,8 +99,7 @@ interface LineKey {
  * par défaut, et on retombe sur la référence brute pour qu'un produit retiré du
  * catalogue reste retirable du panier.
  */
-function keyOf(profile: MerchantProfile, ref: ProductRef): LineKey {
-  const resolved = resolveProductRef(profile, ref)
+function keyOf(resolved: ResolvedProduct | null, ref: ProductRef): LineKey {
   return resolved
     ? { productId: resolved.product.productId, variantId: resolved.variantId }
     : { productId: ref.productId, variantId: ref.variantId }
@@ -91,21 +109,29 @@ function matches(line: CartLine, key: LineKey): boolean {
   return line.productId === key.productId && line.variantId === key.variantId
 }
 
-function removeRef(cart: readonly CartLine[], profile: MerchantProfile, ref: ProductRef) {
-  const key = keyOf(profile, ref)
+/** Une quantité retirée invalide (0,5 robe) laisse la ligne intacte plutôt que d'y laisser une fraction. */
+function removeRef(cart: readonly CartLine[], ctx: Ctx, ref: ProductRef): CartLine[] {
+  const resolved = resolveProductRef(ctx.profile, ref)
+  const key = keyOf(resolved, ref)
   const removed = ref.quantity
-  if (removed === undefined) return cart.filter((line) => !matches(line, key))
+  // Produit sorti du catalogue : son pas est inconnu, on ne retire que la ligne entière.
+  if (removed === undefined || !resolved) return cart.filter((line) => !matches(line, key))
+  if (!isWholeSteps(resolved.product, removed)) return [...cart]
+  // Repasser sous la quantité négociée fait perdre la remise : retour au prix affiché.
+  const dealQuantity = ctx.state.negotiation[key.productId]?.quantity ?? 1
   return cart.flatMap((line) => {
     if (!matches(line, key)) return [line]
     const quantity = line.quantity - removed
-    return quantity > 0 ? [{ ...line, quantity }] : []
+    if (quantity <= 0) return []
+    const agreedPrice = quantity < dealQuantity ? line.unitPrice : line.agreedPrice
+    return [{ ...line, quantity, agreedPrice }]
   })
 }
 
 /** Sans quantité on retire la ligne entière ; sans référence du tout on vide le panier. */
 export function handleRemoveFromCart(ctx: Ctx): Draft {
   const cart = ctx.intent.productRefs.reduce<CartLine[]>(
-    (lines, ref) => removeRef(lines, ctx.profile, ref),
+    (lines, ref) => removeRef(lines, ctx, ref),
     ctx.intent.productRefs.length === 0 ? [] : [...ctx.state.cart],
   )
   return {

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import * as domain from './index'
+import * as testing from './testing'
 
 describe('public index', () => {
   it('re-exports the schemas and functions plans 2 and 3 depend on', () => {
@@ -15,7 +16,10 @@ describe('public index', () => {
     expect(domain.exportProfile).toBeTypeOf('function')
     expect(domain.CATALOGUE_CSV_COLUMNS).toBeDefined()
   })
-  it('re-exports the pilot fixture', () => {
-    expect(domain.pilotProfile.merchantId).toBe('pilot')
+  it('keeps the pilot fixture out of the production barrel', () => {
+    expect('pilotProfile' in domain).toBe(false)
+  })
+  it('exposes the pilot fixture from the testing entry point', () => {
+    expect(testing.pilotProfile.merchantId).toBe('pilot')
   })
 })

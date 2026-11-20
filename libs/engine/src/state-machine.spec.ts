@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { newConversationState, pilotProfile, type ConversationState } from '@wa/domain'
+import { newConversationState, type ConversationState } from '@wa/domain'
+import { pilotProfile } from '@wa/domain/testing'
 import { transition } from './state-machine'
 import type { Intent } from './intent-schema'
 

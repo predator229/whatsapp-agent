@@ -29,6 +29,8 @@ export type TurnFact =
   | { kind: 'OutOfScope'; query: string }
   | { kind: 'OutOfStock'; productId: string; name: string; available: number }
   | { kind: 'MinQuantity'; productId: string; name: string; minQuantity: number; unit: string }
+  /** Quantité refusée : fraction d'une pièce, hors du pas du vrac, ou au-delà du plafond. */
+  | { kind: 'QuantityInvalid'; productId: string; name: string; step: number; max: number }
   | {
       kind: 'NegotiationResult'
       productId: string

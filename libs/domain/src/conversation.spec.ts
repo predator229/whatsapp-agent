@@ -7,6 +7,7 @@ import {
   MAX_TURNS,
   newConversationState,
   periodOf,
+  quotaStatus,
   ReplyCounterSchema,
 } from './conversation'
 
@@ -96,5 +97,26 @@ describe('reply counter', () => {
       period: '2026-09',
       replies: 1,
     })
+  })
+})
+
+describe('quotaStatus', () => {
+  const counter = (replies: number, period = '2026-09') =>
+    ReplyCounterSchema.parse({ merchantId: 'm1', period, replies })
+
+  it('is ok below 80 % of the monthly cap', () => {
+    expect(quotaStatus(counter(799), 1000, at)).toBe('ok')
+  })
+
+  it('warns from 80 % of the monthly cap', () => {
+    expect(quotaStatus(counter(800), 1000, at)).toBe('warning')
+  })
+
+  it('is exceeded at the cap, before any LLM call', () => {
+    expect(quotaStatus(counter(1000), 1000, at)).toBe('exceeded')
+  })
+
+  it('ignores a counter from a past period', () => {
+    expect(quotaStatus(counter(1000, '2026-08'), 1000, at)).toBe('ok')
   })
 })

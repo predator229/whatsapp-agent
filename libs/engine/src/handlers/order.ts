@@ -1,5 +1,14 @@
-import { orderTotal, type MerchantProfile, type Order, type OrderLine } from '@wa/domain'
+import {
+  orderTotal,
+  type CartLine,
+  type MerchantProfile,
+  type Order,
+  type OrderLine,
+} from '@wa/domain'
 import { resolveProductRef } from '../catalogue'
+import type { TurnFact } from '../facts'
+import { MAX_LINE_QUANTITY, isSaneQuantity } from '../quantity'
+import { blockingFact } from './cart'
 import { findZone, zoneCandidate, zoneFact, type Ctx, type Draft } from './shared'
 
 const PERCENT = 100
@@ -46,11 +55,42 @@ function depositFor(profile: MerchantProfile, lines: readonly OrderLine[]): numb
   }, 0)
 }
 
+/**
+ * Défaut d'une ligne qui interdit d'en faire une commande. Le panier est une donnée
+ * persistée : on ne présume pas qu'il est passé par `handleAddToCart`. Une ligne dont le
+ * produit a quitté le catalogue garde sa quantité, pourvu qu'elle soit saine.
+ */
+function lineDefect(profile: MerchantProfile, line: CartLine): TurnFact | null {
+  const resolved = resolveProductRef(profile, line)
+  if (resolved) return blockingFact(resolved, line.quantity)
+  return isSaneQuantity(line.quantity)
+    ? null
+    : {
+        kind: 'QuantityInvalid',
+        productId: line.productId,
+        name: line.productId,
+        step: 1,
+        max: MAX_LINE_QUANTITY,
+      }
+}
+
+/**
+ * Idempotente : une fois la commande émise, « je confirme » (ou le même message livré
+ * deux fois) rappelle le récapitulatif sans réémettre `OrderConfirmed`. Le panier et la
+ * négociation sont vidés : le prochain ajout ouvre une nouvelle commande.
+ */
 export function handleConfirmOrder(ctx: Ctx): Draft {
   const { state, profile, receivedAt } = ctx
+  if (state.phase === 'confirmed' && state.confirmedOrder) {
+    return { state, facts: [{ kind: 'OrderSummary', order: state.confirmedOrder }], events: [] }
+  }
   if (state.cart.length === 0) {
     return { state: { ...state, phase: 'browsing' }, facts: [{ kind: 'Unclear' }], events: [] }
   }
+  const defect = state.cart
+    .map((line) => lineDefect(profile, line))
+    .find((fact): fact is TurnFact => fact !== null)
+  if (defect) return { state: { ...state, phase: 'cart' }, facts: [defect], events: [] }
   const zone = findZone(profile, state.address?.zone ?? state.address?.text)
   if (!state.address || !zone) {
     return { state: { ...state, phase: 'address' }, facts: [{ kind: 'AddressNeeded' }], events: [] }
@@ -76,7 +116,7 @@ export function handleConfirmOrder(ctx: Ctx): Draft {
     createdAt: receivedAt,
   }
   return {
-    state: { ...state, phase: 'confirmed' },
+    state: { ...state, phase: 'confirmed', cart: [], negotiation: {}, confirmedOrder: order },
     facts: [{ kind: 'OrderSummary', order }],
     events: [{ type: 'OrderConfirmed', at: receivedAt, order }],
   }

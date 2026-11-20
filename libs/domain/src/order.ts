@@ -7,7 +7,7 @@ export const OrderLineSchema = z.object({
   productId: z.string().min(1),
   variantId: z.string().min(1).optional(),
   label: z.string().min(1),
-  quantity: z.number().positive(),
+  quantity: z.number().positive().finite(),
   unitPrice: price,
   agreedPrice: price,
 })
