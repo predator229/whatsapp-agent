@@ -19,7 +19,7 @@ export const INTENT_NAMES = [
 export const ProductRefSchema = z.object({
   productId: z.string().min(1),
   variantId: z.string().min(1).optional(),
-  quantity: z.number().positive().optional(),
+  quantity: z.number().positive().finite().optional(),
 })
 
 export const IntentSchema = z.object({

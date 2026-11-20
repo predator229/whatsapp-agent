@@ -22,9 +22,17 @@ export const CATALOGUE_CSV_COLUMNS = [
 
 type Row = Record<(typeof CATALOGUE_CSV_COLUMNS)[number], string | number | boolean | null>
 
+/** Début de cellule qu'Excel/Sheets interprète comme une formule (injection CSV). */
+const FORMULA_START = /^[=+\-@\t\r]/
+
+/**
+ * Les nombres sont écrits tels quels (un prix négatif n'existe pas) ; un texte qui
+ * commence comme une formule est préfixé d'une apostrophe, puis échappé normalement.
+ */
 function csvCell(value: string | number | boolean | null): string {
   if (value === null) return ''
-  const s = String(value)
+  const raw = String(value)
+  const s = typeof value === 'string' && FORMULA_START.test(raw) ? `'${raw}` : raw
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 

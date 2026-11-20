@@ -18,6 +18,8 @@ function numbersOf(fact: TurnFact): number[] {
       return [fact.available]
     case 'MinQuantity':
       return [fact.minQuantity]
+    case 'QuantityInvalid':
+      return [fact.step, fact.max]
     case 'NegotiationResult':
       return [fact.offer]
     case 'CartUpdated':
@@ -49,6 +51,7 @@ function phrasesOf(fact: TurnFact): string[] {
     case 'PriceQuoted':
     case 'OutOfStock':
     case 'MinQuantity':
+    case 'QuantityInvalid':
     case 'NegotiationResult':
       return [fact.name]
     case 'DeliveryQuoted':

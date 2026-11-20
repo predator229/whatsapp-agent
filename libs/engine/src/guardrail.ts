@@ -1,3 +1,5 @@
+import { extractWordNumbers } from './number-words'
+
 /**
  * Garde-fou anti-hallucination : rejette toute réponse contenant un nombre non
  * autorisé pour ce tour (prix, quantité, etc.).
@@ -6,9 +8,16 @@
  * (coûte une réponse, déclenche `GuardrailTripped`), soit un résidu qui ne
  * porte que sur une quantité. Aucune ne laisse jamais passer un prix inventé.
  *
+ * Nombres en toutes lettres : détectés par `extractWordNumbers` (« deux mille cinq
+ * cents » → 2500) et soumis à la même liste blanche. Un nombre en lettres non détecté
+ * serait une acceptation à tort, pas un faux rejet : d'où ce contrôle en plus de la
+ * consigne du prompt. Résidu : « neuf » isolé (voir `number-words.ts`).
+ *
+ * Termes interdits (`forbiddenPhrases`) : promesses verbales sans chiffre (« gratuit »,
+ * « offert ») que la liste blanche numérique ne peut pas voir. La liste relève de la
+ * politique du commerçant ; elle est fournie par l'appelant.
+ *
  * Sens sûr (faux rejet uniquement) :
- * - Les nombres écrits en toutes lettres (« deux mille ») ne sont pas détectés ;
- *   le prompt du composer interdit explicitement cette forme.
  * - Les heures (« 14h30 »), les dates (« 25/09 ») et les numéros de téléphone
  *   groupés (« 97 12 34 56 ») ressortent comme autant de nombres distincts
  *   (14 et 30, 25 et 9, 97, 12, 34, 56) plutôt qu'une seule valeur — chacun
@@ -42,12 +51,19 @@ export interface GuardrailInput {
   readonly text: string
   readonly allowedNumbers: readonly number[]
   readonly allowedPhrases?: readonly string[]
+  /** Termes que la réponse ne doit jamais contenir (casse et accents ignorés, mot entier). */
+  readonly forbiddenPhrases?: readonly string[]
   readonly maxReplyChars: number
 }
 
 export type GuardrailResult =
   | { readonly ok: true; readonly text: string }
-  | { readonly ok: false; readonly offending: readonly number[] }
+  | {
+      readonly ok: false
+      readonly offending: readonly number[]
+      /** Présent seulement si un terme interdit a été trouvé. */
+      readonly forbidden?: readonly string[]
+    }
 
 /** Espaces utilisées comme séparateur de milliers en français. Jamais décimales. */
 const THOUSAND_SPACES = /[    ]/g
@@ -105,6 +121,21 @@ function stripPhrases(text: string, phrases: readonly string[]): string {
   )
 }
 
+function fold(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+}
+
+/** Termes interdits présents comme mots entiers (« gratuit » mais pas « gratuitement »). */
+function findForbidden(text: string, phrases: readonly string[]): string[] {
+  const folded = fold(text)
+  return phrases.filter((phrase) =>
+    new RegExp(`(?<![\\p{L}\\d])${escapeRegExp(fold(phrase))}(?![\\p{L}\\d])`, 'u').test(folded),
+  )
+}
+
 /** Coupe à la dernière phrase complète qui tient dans `maxChars`, sinon coupe net. */
 export function truncateToSentence(text: string, maxChars: number): string {
   if (text.length <= maxChars) return text
@@ -121,7 +152,10 @@ export function truncateToSentence(text: string, maxChars: number): string {
 export function checkReply(input: GuardrailInput): GuardrailResult {
   const allowed = new Set(input.allowedNumbers)
   const cleaned = stripPhrases(input.text, input.allowedPhrases ?? [])
-  const offending = [...new Set(extractNumbers(cleaned))].filter((n) => !allowed.has(n))
+  const cited = [...extractNumbers(cleaned), ...extractWordNumbers(cleaned)]
+  const offending = [...new Set(cited)].filter((n) => !allowed.has(n))
+  const forbidden = findForbidden(input.text, input.forbiddenPhrases ?? [])
+  if (forbidden.length > 0) return { ok: false, offending, forbidden }
   if (offending.length > 0) return { ok: false, offending }
   return { ok: true, text: truncateToSentence(input.text, input.maxReplyChars) }
 }

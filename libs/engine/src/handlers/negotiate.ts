@@ -1,6 +1,7 @@
 import { resolveProductRef, type ResolvedProduct } from '../catalogue'
 import { evaluateNegotiation, type NegotiationOutcome } from '../negotiation-engine'
 import type { TurnFact } from '../facts'
+import type { ProductRef } from '../intent-schema'
 import { currentPrice, emptyDraft, priceFact, withFact, type Ctx, type Draft } from './shared'
 
 /** Le commerçant a dit son dernier mot : plus rien à concéder après ce tour. */
@@ -8,13 +9,20 @@ function isFinal(outcome: NegotiationOutcome): boolean {
   return outcome.reason === 'max_rounds' || outcome.reason === 'floor_reached'
 }
 
-function negotiateRef(ctx: Ctx, draft: Draft, resolved: ResolvedProduct, offer: number): Draft {
+function negotiateRef(
+  ctx: Ctx,
+  draft: Draft,
+  resolved: ResolvedProduct,
+  ref: ProductRef,
+  offer: number,
+): Draft {
   const productId = resolved.product.productId
+  const quantity = ref.quantity ?? 1
   const outcome = evaluateNegotiation({
     policy: ctx.profile.negotiation,
     product: resolved.product,
     listedPrice: resolved.unitPrice,
-    quantity: ctx.intent.productRefs[0]?.quantity ?? 1,
+    quantity,
     counterOffer: offer,
     round: draft.state.negotiation[productId]?.round ?? 0,
   })
@@ -32,7 +40,11 @@ function negotiateRef(ctx: Ctx, draft: Draft, resolved: ResolvedProduct, offer: 
       phase: 'negotiating',
       negotiation: {
         ...draft.state.negotiation,
-        [productId]: { round: outcome.round, currentOffer: outcome.offer },
+        [productId]: {
+          round: outcome.round,
+          currentOffer: outcome.offer,
+          ...(quantity > 1 ? { quantity } : {}),
+        },
       },
     },
     facts: [...draft.facts, fact],
@@ -50,7 +62,7 @@ export function handleNegotiate(ctx: Ctx): Draft {
     const resolved = resolveProductRef(ctx.profile, ref)
     if (!resolved) return withFact(draft, { kind: 'OutOfScope', query: ref.productId })
     if (counterOffer === undefined)
-      return withFact(draft, priceFact(resolved, currentPrice(draft.state, resolved)))
-    return negotiateRef(ctx, draft, resolved, counterOffer)
+      return withFact(draft, priceFact(resolved, currentPrice(draft.state, resolved, ref.quantity)))
+    return negotiateRef(ctx, draft, resolved, ref, counterOffer)
   }, emptyDraft(ctx))
 }

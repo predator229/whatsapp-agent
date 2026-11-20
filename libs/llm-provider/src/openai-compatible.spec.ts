@@ -105,6 +105,90 @@ describe('OpenAiCompatibleProvider', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2)
   })
 
+  it('waits a jittered base delay before retrying', async () => {
+    const sleep = vi.fn(async (_ms: number) => {})
+    const fetchImpl = vi
+      .fn<FetchLike>()
+      .mockResolvedValueOnce(jsonResponse({ error: 'boom' }, 502))
+      .mockResolvedValueOnce(jsonResponse(okBody))
+    const provider = new OpenAiCompatibleProvider({
+      baseUrl: 'http://x',
+      model: 'm',
+      fetchImpl,
+      retryDelayMs: 200,
+      sleep,
+    })
+
+    await provider.complete(req)
+    const waited = sleep.mock.calls[0]![0]
+    expect(waited).toBeGreaterThanOrEqual(200)
+    expect(waited).toBeLessThanOrEqual(400)
+  })
+
+  it('retries once on 429 and honours Retry-After in seconds, capped', async () => {
+    const sleep = vi.fn(async (_ms: number) => {})
+    const limited = (retryAfter: string) =>
+      new Response('{}', { status: 429, headers: { 'retry-after': retryAfter } })
+    const fetchImpl = vi
+      .fn<FetchLike>()
+      .mockResolvedValueOnce(limited('2'))
+      .mockResolvedValueOnce(jsonResponse(okBody))
+      .mockResolvedValueOnce(limited('3600'))
+      .mockResolvedValueOnce(limited('3600'))
+    const provider = new OpenAiCompatibleProvider({
+      baseUrl: 'http://x',
+      model: 'm',
+      fetchImpl,
+      sleep,
+    })
+
+    expect((await provider.complete(req)).text).toBe('bonsoir')
+    expect(sleep).toHaveBeenLastCalledWith(2000)
+    await expect(provider.complete(req)).rejects.toThrow(/429 after 1 retry/)
+    expect(sleep).toHaveBeenLastCalledWith(10_000)
+    expect(fetchImpl).toHaveBeenCalledTimes(4)
+  })
+
+  it('reads Retry-After as an HTTP date and ignores an unreadable one', async () => {
+    const sleep = vi.fn(async (_ms: number) => {})
+    const limited = (retryAfter: string) =>
+      new Response('{}', { status: 429, headers: { 'retry-after': retryAfter } })
+    const fetchImpl = vi
+      .fn<FetchLike>()
+      .mockResolvedValueOnce(limited(new Date(Date.now() - 60_000).toUTCString()))
+      .mockResolvedValueOnce(jsonResponse(okBody))
+      .mockResolvedValueOnce(limited('bientôt'))
+      .mockResolvedValueOnce(jsonResponse(okBody))
+    const provider = new OpenAiCompatibleProvider({
+      baseUrl: 'http://x',
+      model: 'm',
+      fetchImpl,
+      retryDelayMs: 100,
+      sleep,
+    })
+
+    await provider.complete(req)
+    expect(sleep).toHaveBeenLastCalledWith(0)
+    await provider.complete(req)
+    expect(sleep.mock.calls[1]![0]).toBeGreaterThanOrEqual(100)
+  })
+
+  it('waits with a real timer by default', async () => {
+    vi.useFakeTimers()
+    try {
+      const fetchImpl = vi
+        .fn<FetchLike>()
+        .mockResolvedValueOnce(jsonResponse({ error: 'boom' }, 503))
+        .mockResolvedValueOnce(jsonResponse(okBody))
+      const provider = new OpenAiCompatibleProvider({ baseUrl: 'http://x', model: 'm', fetchImpl })
+      const pending = provider.complete(req)
+      await vi.advanceTimersByTimeAsync(1000)
+      expect((await pending).text).toBe('bonsoir')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('does not retry on 4xx', async () => {
     const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse({ error: 'bad key' }, 401))
     const provider = new OpenAiCompatibleProvider({ baseUrl: 'http://x', model: 'm', fetchImpl })

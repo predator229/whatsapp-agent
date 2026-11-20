@@ -1,12 +1,13 @@
 {
   "name": "whatsapp-agent",
   "version": "1.0.0",
-  "description": "Static coming-soon page served at https://agent.cybersds.fr",
+  "description": "WhatsApp sales agent for merchants: Nx libs (domain, engine, llm-provider) and the static landing at https://agent.cybersds.fr",
   "directories": {
     "doc": "docs"
   },
   "scripts": {
     "test": "nx run-many -t test",
+    "typecheck": "for p in libs/domain libs/engine libs/llm-provider; do tsc --noEmit -p $p/tsconfig.lib.json && tsc --noEmit -p $p/tsconfig.spec.json || exit 1; done && tsc --noEmit -p tools/demo-chat/tsconfig.json",
     "chat": "vite-node -c tools/demo-chat/vite-node.config.mts tools/demo-chat/server.mts"
   },
   "author": "",
